@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Breathing Building Skin — Bahamian House (VR)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1b130c; font-family: 'Caveat', 'Segoe Print', cursive; }
+  canvas { display: block; touch-action: none; cursor: grab; }
+  #hud { position: fixed; top: 12px; left: 14px; color: #f7ecd2; text-shadow: 0 1px 3px rgba(0,0,0,.7); pointer-events: none; max-width: 52vw; }
+  #hud h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: .3px; }
+  #hud p { margin: 2px 0 0; font-size: 16px; line-height: 1.15; opacity: .92; }
+  #ui { position: fixed; right: 12px; bottom: 12px; background: rgba(74,44,22,.86); border: 2px solid #2a170a; border-radius: 12px; padding: 8px 10px; color: #f7ecd2; box-shadow: 0 6px 22px rgba(0,0,0,.35); max-width: 400px; font-size: 15px; }
+  #uihead { cursor: pointer; font-weight: 700; font-size: 20px; user-select: none; }
+  #ui.min .row, #ui.min #status { display: none; }
+  #ui .row { display: flex; align-items: center; gap: 5px; margin: 4px 0; flex-wrap: wrap; }
+  #ui .row span { width: 62px; font-weight: 700; font-size: 16px; }
+  #ui button { font-family: inherit; font-size: 15px; font-weight: 600; background: #eadcc0; color: #3a2614; border: 1.5px solid #3a2614; border-radius: 8px; padding: 2px 9px; cursor: pointer; }
+  #ui button.on { background: #e2a64a; font-weight: 700; }
+  #ui button:hover { background: #f5e8cb; }
+  #ui button.on:hover { background: #eab25a; }
+  #status { margin-top: 6px; font-size: 16px; background: rgba(247,233,200,.92); color: #3a2614; border-radius: 6px; padding: 3px 8px; }
+  #vr { position: fixed; left: 14px; bottom: 18px; font-family: inherit; font-size: 24px; font-weight: 700; padding: 8px 26px; border-radius: 30px; border: 2px solid #2a170a; background: #e2a64a; color: #2b1404; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  #vr.off { background: #cbbfa6; font-size: 19px; }
+  #dpad { position: fixed; left: 16px; bottom: 80px; display: none; grid-template-columns: repeat(3, 52px); gap: 6px; }
+  #dpad button { width: 52px; height: 52px; border-radius: 12px; border: 2px solid #2a170a; background: rgba(234,220,192,.85); font-size: 22px; }
+  @media (pointer: coarse) { #dpad { display: grid; } #ui { max-width: 62vw; transform: scale(.82); transform-origin: bottom right; } #hud p { display: none; } }
+  #tip { position: fixed; display: none; pointer-events: none; background: rgba(247,233,200,.95); color: #3a2614; padding: 2px 8px; border-radius: 6px; font-size: 18px; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #e9dcc0; color: #3a2614; font-size: 34px; z-index: 9; }
+  #loading small { font-size: 20px; opacity: .7; }
+  body.xr #ui, body.xr #hud, body.xr #dpad { display: none; }
+</style>
+<script>
+  window.addEventListener('error', function (e) { var l = document.getElementById('loading'); if (l) { l.style.display = 'flex'; l.innerHTML = 'Sorry — the 3D scene failed to start.<small>' + (e.message || 'script error') + '</small>'; } });
+  setTimeout(function () { var l = document.getElementById('loading'); if (l && l.style.display !== 'none' && !window.__house) l.innerHTML = 'Still loading the 3D engine…<small>If this stays, your browser may be blocking WebGL or the three.js CDN.</small>'; }, 15000);
+</script>
+<script type="importmap">
+{ "imports": { "three": "__THREE__", "three/addons/": "__ADDONS__" } }
+</script>
+</head>
+<body>
+<div id="loading">Building the house…<small>conch roof · breathing wall · palms · ocean</small></div>
+<div id="hud">
+  <h1>Breathing Building Skin — Bahamian House</h1>
+  <p>Drag to look · W A S D / arrows to walk (Shift = faster, Q/E turn) · click doors, sea-fan screens and the wooden control panels.<br>
+  In VR: left stick walks · right stick ↑ aims a teleport arc, release to jump · right stick ←/→ snap-turns · trigger presses buttons & opens doors.</p>
+</div>
+<div id="ui"></div>
+<div id="tip"></div>
+<div id="dpad">
+  <span></span><button data-v="1,0">▲</button><span></span>
+  <button data-v="0,-1">◀</button><button data-v="-1,0">▼</button><button data-v="0,1">▶</button>
+</div>
+<button id="vr">ENTER VR</button>
+<script type="module">
+__CODE__
+</script>
+</body>
+</html>
