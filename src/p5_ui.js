@@ -120,7 +120,7 @@ let conch2;
   {
     const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.0, 16), M.stone); ped.position.set(ex - 4.2, 0.5, ez + 3.4); EXPLODED.add(ped);
     addCollider(ex - 4.7, ex - 3.7, 0, 1.5, ez + 2.9, ez + 3.9);
-    const seg = new THREE.Mesh(petalGeometry(13, ROOF_R, CONCH_H, 1.75), shellMat); seg.scale.setScalar(0.45); seg.castShadow = true;
+    const seg = new THREE.Mesh(petalGeometry(16, ROOF_R, CONCH_H, 1.9), shellMat); seg.scale.setScalar(0.45); seg.castShadow = true;
     const holder = new THREE.Group(); holder.position.set(ex - 4.2, 1.05, ez + 3.4); EXPLODED.add(holder);
     seg.position.set(ROOF_R * 0.45 * 0.5, 0, 0); holder.add(seg);
     updaters.push((dt, t) => { holder.rotation.y = t * 0.25; });
@@ -152,12 +152,13 @@ const roofStatus = label('ROOF: STAGE 1 — CLOSED / SEALED\n0% open · no airfl
 const wallStatus = label('WALL: STATE 1 — CLOSED FLAT\nfully sealed · watertight · no gaps', [13.2, 6.0, 0], { size: 0.28 });
 {
   const RT = CORE.top + 0.3 + DRUM_H;
-  label('CONCH SHELL ROOF — 18 m bloom diameter\nspiralling open in 3 stages · rotates 120° clockwise, then lowers on curved track', [CORE.cx, CORE.top + 8.2, CORE.cz], { size: 0.38, title: true });
+  label('CONCH SHELL ROOF — one rigid spiral shell\nspiralling open in 3 stages · rotates 120°, retracts, then falls outward on a hinge track', [CORE.cx, CORE.top + 8.2, CORE.cz], { size: 0.38, title: true });
   label('Curved stainless steel sliding track', [CORE.cx + ROOF_R + 2.8, RT + 0.9, 2.4], { size: 0.24, target: [CORE.cx + ROOF_R + 0.4, RT - 0.15, 1.2] });
   label('Compression gasket seal (when closed)', [CORE.cx - ROOF_R - 2.8, RT + 0.6, -1.4], { size: 0.24, target: [CORE.cx - ROOF_R, RT + 0.04, -0.6] });
   label('Linear actuator 24 V · radial arm hinge', [CORE.cx + 1.0, RT + 0.6, -ROOF_R - 3.2], { size: 0.24, target: [CORE.cx + 0.6, RT - 0.4, -ROOF_R + 0.5] });
   label('Roller bearings', [CORE.cx + ROOF_R + 2.2, RT + 1.8, -3.6], { size: 0.24, target: [CORE.cx + ROOF_R * 0.7, RT, -ROOF_R * 0.7] });
   label('Spiral guide rail', [CORE.cx - 1.2, U + 1.5, 1.9], { size: 0.16, target: [CORE.cx - 0.6, RT - 0.2, 1.2] });
+  label('Round pavilion wall — diamond-scale skin, sponge core hidden inside', [CORE.cx - ROOF_R - 2.4, CORE.top + 1.0, 3.2], { size: 0.22, target: [CORE.cx - ROOF_R * 0.7, CORE.top + 1.0, ROOF_R * 0.7] });
   label('DIAMOND SHINGLE WAVE WALL\nbreathing building skin', [13.2, 7.1, 0], { size: 0.3, title: true });
   label('Diamond wood shingles · 60 mm · overlapping', [11.8, 4.2, -3.4], { size: 0.17, target: [9.15, 4.0, -3.2] });
   label('Wavy arched glass entrance', [11.4, 3.7, 1.1], { size: 0.16, target: [9.1, G + 2.2, 0.4] });
@@ -175,15 +176,16 @@ function statusText() {
   const p = S.roof.p;
   let r;
   if (p < 0.02) r = 'ROOF: STAGE 1 — CLOSED / SEALED\n0% open · no airflow · hurricane-tight';
-  else if (Math.abs(p - 0.5) < 0.02) r = 'ROOF: STAGE 2 — SEMI-OPEN 50%\nrotated 120° clockwise · petals lifted · warm air exits';
-  else if (p > 0.98) r = 'ROOF: STAGE 3 — FULLY OPEN / BLOOMED 100%\npetals dropped out & down on curved track · full airflow';
-  else r = `ROOF: ${p < 0.5 ? 'rotating 120° & lifting' : 'falling out on curved track'} — ${Math.round(p * 100)}%\n${S.roof.paused ? 'PAUSED' : 'moving slowly…'}`;
+  else if (Math.abs(p - 0.5) < 0.02) r = 'ROOF: STAGE 2 — SEMI-OPEN 50%\nlifted off the seal · rotated 120° clockwise · warm air exits at the rim';
+  else if (p > 0.98) r = 'ROOF: STAGE 3 — FULLY OPEN 100%\nshell retracted & dropped outward on the hinge track · full airflow';
+  else r = `ROOF: ${p < 0.5 ? 'lifting & rotating 120°' : p < 0.6 ? 'retracting on the track' : p < 0.79 ? 'actuators lifting the shell' : 'falling outward onto the hinge track'} — ${Math.round(p * 100)}%\n${S.roof.paused ? 'PAUSED' : 'moving slowly…'}`;
   const w = S.wall.p;
   let wl;
   if (w < 0.02) wl = 'WALL: STATE 1 — CLOSED FLAT\nfully sealed · watertight · no gaps';
   else if (Math.abs(w - 1) < 0.02) wl = 'WALL: STATE 2 — CLOSED BUT IN A WAVE\nstill sealed · flexes like flowing water';
-  else if (w > 1.98) wl = 'WALL: STATE 3 — SEMI-OPEN WAVE\nshingles lift · micro-vents breathe · light glows through';
-  else wl = `WALL: rippling ${w < 1 ? 'into a wave' : 'open'}…\n${Math.round(w / 2 * 100)}%`;
+  else if (Math.abs(w - 2) < 0.02) wl = 'WALL: STATE 3 — SEMI-OPEN WAVE\nshingles lift · micro-vents breathe · light glows through';
+  else if (w > 2.98) wl = 'WALL: FULLY OPEN\nall scales lifted like louvres · maximum breeze';
+  else wl = `WALL: rippling ${w < 1 ? 'into a wave' : 'open'}…\n${Math.round(w / 3 * 100)}%`;
   return [r, wl];
 }
 let lastStatus = '';
@@ -206,7 +208,7 @@ function setWall(v) {
 const ex_panel = [-6.2, -17.4];
 const ROWS = [
   ['ROOF', [['Closed', () => setRoof(0), () => S.roof.target === 0], ['Semi 50%', () => setRoof(0.5), () => S.roof.target === 0.5], ['Open 100%', () => setRoof(1), () => S.roof.target === 1], ['Pause', () => { S.roof.paused = !S.roof.paused; refreshUI(); }, () => S.roof.paused]]],
-  ['WALL', [['Flat', () => setWall(0), () => S.wall.target === 0], ['Wave', () => setWall(1), () => S.wall.target === 1], ['Semi-open', () => setWall(2), () => S.wall.target === 2]]],
+  ['WALL', [['Flat', () => setWall(0), () => S.wall.target === 0], ['Wave', () => setWall(1), () => S.wall.target === 1], ['Semi-open', () => setWall(2), () => S.wall.target === 2], ['Open', () => setWall(3), () => S.wall.target === 3], [S.wallStill ? 'Still' : 'Moving', () => { S.wallStill = !S.wallStill; ROWS[1][1][4][0] = S.wallStill ? 'Still' : 'Moving'; buildHTML(); refreshUI(); }, () => !S.wallStill]]],
   ['WEATHER', [['Breeze', () => { S.weather = 'breeze'; applyAll(); }, () => S.weather === 'breeze'], ['Sunset', () => { S.weather = 'sunset'; S.time = 'dusk'; applyAll(); }, () => S.weather === 'sunset'], ['Storm', () => { S.weather = 'storm'; applyAll(); }, () => S.weather === 'storm']]],
   ['TIME', [['Day', () => { S.time = 'day'; if (S.weather === 'sunset') S.weather = 'breeze'; applyAll(); }, () => S.time === 'day'], ['Dusk', () => { S.time = 'dusk'; applyAll(); }, () => S.time === 'dusk'], ['Night', () => { S.time = 'night'; if (S.weather === 'sunset') S.weather = 'breeze'; applyAll(); }, () => S.time === 'night']]],
   ['VIEW', [['X-Ray', () => { S.xray = !S.xray; applyAll(); }, () => S.xray], ['Labels', () => { S.labels = !S.labels; applyAll(); }, () => S.labels], ['Sea fans', () => { S.fansOpen = !S.fansOpen; refreshUI(); }, () => S.fansOpen], ['Doors', () => { S.allDoors = !S.allDoors; refreshUI(); }, () => S.allDoors]]],
@@ -305,7 +307,7 @@ function applyAll() {
   const P = TIME[S.time]; const storm = S.weather === 'storm';
   dapple.intensity = storm ? 0 : S.time === 'day' ? 90 : S.time === 'dusk' ? 35 : 0;
   dapple.color.set(S.time === 'dusk' ? 0xffb070 : 0xfff0d0);
-  WALL.setXray(S.xray); SECTION.visible = S.xray;
+  WALL.setXray(S.xray); SKIN.setXray(S.xray); SECTION.visible = S.xray;
   labelsRoot.visible = S.labels;
   EXPLODED.traverse(o => { if (o.isSprite || (o.isLine)) o.visible = S.labels; });
   refreshUI();
@@ -323,7 +325,7 @@ function groundAt(x, z, fromY) {
 }
 function blocked(x, z, y) {
   const r = 0.2;
-  if (y > CORE.top - 0.2 && y < CORE.top + 2 && Math.hypot(x - CORE.cx, z - CORE.cz) < ROOF_R * 1.22 + 0.2) return true;
+  if (y > CORE.top - 0.2 && y < CORE.top + 2 && Math.hypot(x - CORE.cx, z - CORE.cz) < ROOF_R + 0.45) return true;
   for (const c of colliders) if (c.on && x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ && y + 0.3 < c.maxY && y + 1.7 > c.minY) return true;
   return false;
 }
@@ -527,7 +529,8 @@ function loop() {
   if (!S.roof.paused) { const d = S.roof.target - S.roof.p; S.roof.p += clamp(d, -0.065 * dt, 0.065 * dt); }
   conch.set(S.roof.p); conch2.set(S.roof.p);
   const dw = S.wall.target - S.wall.p; S.wall.p += clamp(dw, -0.2 * dt, 0.2 * dt);
-  WALL.update(t);
+  if (!S.wallStill) S.wallT += dt;
+  WALL.update(S.wallT);
   for (const f of updaters) f(dt, t);
   // movement
   if (renderer.xr.isPresenting) updateVR(dt);

@@ -6,7 +6,7 @@ T.perf = canvasTex(256, 256, (g, w, h) => {
   g.fillStyle = '#6b5a40';
   for (let y = 8; y < h; y += 16) for (let x = 8 + ((y / 16) % 2) * 8; x < w; x += 16) { g.beginPath(); g.arc(x, y, 3.2, 0, 7); g.fill(); }
 }, { rep: [3, 3] });
-M.lining.map = T.perf;
+M.lining.map = T.perf; M.skinBack.emissiveMap = T.perf; M.skinBack.needsUpdate = true;
 
 const DOORS = [];
 {
@@ -17,7 +17,7 @@ const DOORS = [];
   addCollider(-2.5, 9, 0, G, 6, 7.4);
   // floors
   box(7, 0.03, 12, M.woodFloor, -0.5, G, 0, { walk: true, cast: false });                         // west part ground floor
-  box(6, 0.03, 9, M.flag, 6, G, 0, { walk: true, cast: false });                                   // core (cool stone floor)
+  box(6, 0.03, 9, M.cement, 6, G, 0, { walk: true, cast: false });                                   // core (cool stone floor)
   box(6, 0.03, 1.5, M.flag, 6, G, 5.25, { walk: true, cast: false });                              // front porch
   box(6, 0.03, 1.5, M.flag, 6, G, -5.25, { walk: true, cast: false });                             // back terrace
   box(11.5, 0.03, 1.4, M.flag, 3.25, G, 6.7, { walk: true, cast: false });                         // front terrace
@@ -30,9 +30,8 @@ const DOORS = [];
   for (const x of [-2.25, 1.25]) {
     box(0.45, 0.75, 1.7, M.stone, x, 0, 8.25);
     addCollider(x - 0.23, x + 0.23, 0, 3, 7.4, 9.1);
-    box(0.6, 1.5, 0.6, M.stone, x, 0, 8.9);
-    pottedPlant(x, 1.5, 8.9, 1.05, 2);
-    vine([[x - 0.3, 0.1, 9.2], [x - 0.32, 0.8, 9.21], [x - 0.1, 1.4, 9.21], [x + 0.2, 1.5, 9.1]], 30);
+    pillar(0.6, 1.5, 0.6, x, 0, 8.9);
+    sphere(0.17, M.stone, x, 1.72, 8.9, { seg: 16 }); box(0.4, 0.06, 0.4, M.stone, x, 1.5, 8.9);
   }
   // east door landing + steps
   box(0.8, G, 2.4, M.stone, 9.4, 0, 0, { walk: true });
@@ -48,15 +47,15 @@ const DOORS = [];
 
   /* ---- west part — ground floor walls (stone) ---- */
   const H1 = U - G;
-  wall('x', -4, 3, 6, G, H1, 0.25, M.stone, [
+  wall('x', -4, 3, 6, G, H1, 0.25, M.stucco, [
     { c: -0.5, w: 1.7, h: 2.7, arch: true },
     { c: -3.0, w: 0.9, y: 1.0, h: 1.6, arch: true, mullion: true },
-    { c: 2.0, w: 0.9, y: 1.0, h: 1.6, arch: true, mullion: true }]);
-  wall('z', -6, 6, -4, G, H1, 0.25, M.stone, []);
-  wall('x', -4, 3, -6, G, H1, 0.25, M.stone, [
+    { c: 2.0, w: 0.9, y: 1.0, h: 1.6, arch: true, mullion: true }], { clad: 1 });
+  wall('z', -6, 6, -4, G, H1, 0.25, M.stucco, [{ c: -1.6, w: 1.0, h: 2.3, arch: true }]);
+  wall('x', -4, 3, -6, G, H1, 0.25, M.stucco, [
     { c: -2.2, w: 1.6, y: 1.05, h: 1.3, mullion: true },
-    { c: 1.2, w: 0.9, y: 0.9, h: 1.7, arch: true, mullion: true }]);
-  wall('z', -6, 6, 3, G, H1, 0.25, M.stone, [
+    { c: 1.2, w: 0.9, y: 0.9, h: 1.7, arch: true, mullion: true }], { clad: -1 });
+  wall('z', -6, 6, 3, G, H1, 0.25, M.stucco, [
     { c: -2.4, w: 3.4, h: 2.6, glass: false },
     { c: 2.6, w: 1.5, h: 2.7, arch: true }]);
   // upper floor slab + beamed ceiling
@@ -68,13 +67,13 @@ const DOORS = [];
   wall('x', -4, 3, 6, U, H2, 0.25, M.stucco, [
     { c: -0.5, w: 4.4, h: 2.75, glass: false },
     { c: -3.3, w: 0.8, y: 0.9, h: 1.4, arch: true, mullion: true },
-    { c: 2.3, w: 0.8, y: 0.9, h: 1.4, arch: true, mullion: true }]);
+    { c: 2.3, w: 0.8, y: 0.9, h: 1.4, arch: true, mullion: true }], { clad: 1 });
   wall('z', -6, 6, -4, U, H2, 0.25, M.stucco, [
     { c: 1.0, w: 1.1, h: 2.3, arch: true },
-    { c: -4.0, w: 0.9, y: 0.9, h: 1.4, arch: true, mullion: true }]);
+    { c: -4.0, w: 0.9, y: 0.9, h: 1.4, arch: true, mullion: true }], { clad: 1 });
   wall('x', -4, 3, -6, U, H2, 0.25, M.stucco, [
     { c: -1.5, w: 1.4, y: 0.85, h: 1.5, arch: true, mullion: true },
-    { c: 1.5, w: 0.9, y: 0.9, h: 1.4, arch: true, mullion: true }]);
+    { c: 1.5, w: 0.9, y: 0.9, h: 1.4, arch: true, mullion: true }], { clad: -1 });
   wall('z', -6, 6, 3, U, CORE.top - U, 0.25, M.stucco, [
     { c: 0, w: 1.4, h: 2.4, arch: true },
     { c: 3.85, w: 1.0, h: 2.3, arch: true }]);
@@ -121,29 +120,58 @@ const DOORS = [];
     { c: 7.8, w: 1.1, y: 0.5, h: 2.4, arch: true, mullion: true },
     { c: 4.2, w: 1.35, y: 3.4, h: 2.5, arch: true, glass: false },
     { c: 6.0, w: 1.35, y: 3.4, h: 2.5, arch: true, glass: false },
-    { c: 7.8, w: 1.35, y: 3.4, h: 2.5, arch: true, glass: false }]);
+    { c: 7.8, w: 1.35, y: 3.4, h: 2.5, arch: true, glass: false }], { clad: 1 });
   for (const c of [4.2, 6.0, 7.8]) railing([c - 0.62, U, 4.5], [c + 0.62, U, 4.5], 0.95, 0.11);
   wall('x', 3, 9, -4.5, G, HC, 0.3, M.stucco, [
     { c: 4.5, w: 1.0, y: 4.6, h: 1.4, arch: true },
-    { c: 7.5, w: 1.0, y: 4.6, h: 1.4, arch: true }]);
+    { c: 7.5, w: 1.0, y: 4.6, h: 1.4, arch: true }], { clad: -1 });
   // corner pilasters (stacked stone) framing the breathing wall
-  box(0.5, HC + 0.1, 0.55, M.stone, 9.05, G, 4.5, { collide: true });
-  box(0.5, HC + 0.1, 0.55, M.stone, 9.05, G, -4.5, { collide: true });
+  pillar(0.55, HC + 0.1, 0.6, 9.05, G, 4.5, { collide: true });
+  pillar(0.55, HC + 0.1, 0.6, 9.05, G, -4.5, { collide: true });
   box(0.5, 0.45, 9.5, M.stucco, 9.05, CORE.top - 0.4, 0);
   // perforated inner lining of the breathing wall (with arched door)
-  wall('z', -4.5, 4.5, 8.92, G, HC - 0.4, 0.06, M.lining, [{ c: 0, w: 1.8, h: 2.9, arch: true }]);
+  wall('z', -4.5, 4.5, 8.92, G, HC - 0.4, 0.06, M.lining, [{ c: 0, w: 3.74, h: 4.27, arch: true }]);
   // gallery (upper loggia) + bridge from spiral stair
   box(6, 0.22, 1.3, M.woodFloor, 6, U - 0.22, 3.85, { walk: true });
-  box(1.6, 0.22, 1.4, M.woodFloor, 3.8, U - 0.22, 0, { walk: true });
-  railing([3.15, U, 3.2], [8.85, U, 3.2]);
-  railing([3.15, U, 0.7], [4.62, U, 0.7]);
-  railing([3.15, U, -0.7], [4.62, U, -0.7]);
+  // upstairs landing: the spiral stair arrives here, and it runs along the core's west wall
+  // to the upper-floor doors (x = 3) and on to the loggia gallery
+  box(1.78, 0.22, 4.62, M.woodFloor, 3.89, U - 0.22, 0.89, { walk: true });
+  box(1.78, 0.18, 0.12, M.woodWarm, 3.89, U - 0.4, -1.42);                 // edge beams
+  box(0.12, 0.18, 4.62, M.woodWarm, 4.72, U - 0.4, 0.89);
+  pillar(0.2, U - G - 0.4, 0.2, 4.68, G, -1.32, { collide: true });
+  pillar(0.2, U - G - 0.4, 0.2, 4.68, G, 2.4, { collide: true });
+  // curved mezzanine ring wrapping the top of the spiral stair (the last step lands on its inner edge)
+  {
+    const cx = CORE.cx, cz = CORE.cz, r0 = 1.42, r1 = 2.3, a0 = THREE.MathUtils.degToRad(100), a1 = THREE.MathUtils.degToRad(260);
+    const P = (r, a) => new THREE.Vector2(r * Math.cos(a), r * Math.sin(a));
+    const sh = new THREE.Shape(); sh.moveTo(P(r1, a0).x, P(r1, a0).y);
+    for (let i = 1; i <= 40; i++) { const a = lerp(a0, a1, i / 40); sh.lineTo(P(r1, a).x, P(r1, a).y); }
+    for (let i = 40; i >= 0; i--) { const a = lerp(a0, a1, i / 40); sh.lineTo(P(r0, a).x, P(r0, a).y); }
+    sh.closePath();
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.22, bevelEnabled: false }); g.rotateX(Math.PI / 2); worldUV(g);
+    const ring = new THREE.Mesh(g, M.woodFloor); ring.position.set(cx, U, cz); ring.castShadow = true; ring.receiveShadow = true; scene.add(ring); walkables.push(ring);
+    // fascia band on the curved edges
+    for (const r of [r0, r1]) { const fg = new THREE.CylinderGeometry(r, r, 0.22, 48, 1, true, Math.PI / 2 - a1, a1 - a0); const f = new THREE.Mesh(fg, M.woodWarm); f.material = M.woodWarm; f.position.set(cx, U - 0.11, cz); staticRoot.add(f); }
+    // columns carrying the ring
+    for (const deg of [112, 244]) { const a = THREE.MathUtils.degToRad(deg); pillar(0.22, U - G - 0.22, 0.22, cx + Math.cos(a) * 2.15, G, cz + Math.sin(a) * 2.15, { collide: true }); }
+    // railings: inner edge around the stairwell (open where the stair arrives, ±20° about west)
+    const arcRail = (r, aa, bb, n) => { for (let i = 0; i < n; i++) { const p1 = P(r, lerp(aa, bb, i / n)), p2 = P(r, lerp(aa, bb, (i + 1) / n)); railing([cx + p1.x, U, cz + p1.y], [cx + p2.x, U, cz + p2.y], 1.0, 0.12); } };
+    arcRail(r0 + 0.03, a0, THREE.MathUtils.degToRad(160), 5);
+    arcRail(r0 + 0.03, THREE.MathUtils.degToRad(200), a1, 5);
+    // outer edge where it is open to the living space below
+    arcRail(r1 - 0.04, a0, THREE.MathUtils.degToRad(124), 2);
+    arcRail(r1 - 0.04, THREE.MathUtils.degToRad(236), a1, 2);
+    for (const a of [a0, a1]) { const p1 = P(r0, a), p2 = P(r1, a); railing([cx + p1.x, U, cz + p1.y], [cx + p2.x, U, cz + p2.y]); }
+  }
+  railing([4.76, U, 1.95], [4.76, U, 3.2]);
+  railing([3.15, U, -1.42], [4.19, U, -1.42]);
+  railing([4.76, U, 3.2], [8.85, U, 3.2]);
   // porch shed roof + columns
   {
     const pr = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 2.0), M.terracotta);
     pr.rotation.x = -Math.PI / 2 + 0.28; pr.position.set(6, G + 3.05, 5.45); pr.castShadow = true; pr.receiveShadow = true; staticRoot.add(pr);
     T.terracotta.repeat.set(0.7, 0.7);
-    for (const x of [3.35, 6.1, 8.75]) { box(0.32, 2.75, 0.32, M.stone, x, G, 6.05, { collide: true }); }
+    for (const x of [3.35, 6.1, 8.75]) { pillar(0.42, 2.75, 0.42, x, G, 6.05, { collide: true }); }
     box(6.2, 0.2, 0.3, M.woodDark, 6, G + 2.75, 6.05);
   }
   // core flat roof with circular opening for the conch
@@ -163,27 +191,34 @@ const DOORS = [];
     box(0.12, 0.35, Z1 - Z0, M.stone, cx1 + 0.06, CORE.top - 0.35, 0);
     for (let z = -4.2; z <= 4.21; z += 1.4) box(1.5, 0.3, 0.2, M.woodDark, 9.8, CORE.top - 0.3, z);
     // two stone columns carrying the canopy corners over the breathing wall
-    for (const z of [-4.45, 4.45]) { box(0.45, CORE.top, 0.45, M.stone, 10.3, 0, z, { collide: true }); }
+    for (const z of [-4.45, 4.45]) { pillar(0.6, CORE.top, 0.6, 10.3, 0, z, { collide: true }); }
     // roof-deck railings (corners are walkable)
     addCollider(cx0, cx1, CORE.top + 0.3, CORE.top + 1.5, Z1 - 0.15, Z1 + 0.1); addCollider(cx0, cx1, CORE.top + 0.3, CORE.top + 1.5, Z0 - 0.1, Z0 + 0.15);
     addCollider(cx1 - 0.15, cx1 + 0.1, CORE.top + 0.3, CORE.top + 1.5, Z0, Z1);
     addCollider(cx0 - 0.1, cx0 + 0.15, CORE.top, CORE.top + 2, Z0, Z1);
-    // drum the conch sits on
-    const drum = new THREE.Mesh(new THREE.CylinderGeometry(ROOF_R + 0.08, ROOF_R + 0.08, DRUM_H, 64, 1, true), new THREE.MeshStandardMaterial({ map: T.stone, side: THREE.DoubleSide, roughness: 0.9 }));
-    drum.position.set(CORE.cx, CORE.top + 0.3 + DRUM_H / 2, CORE.cz); drum.castShadow = true; staticRoot.add(drum);
+    // ROUND PAVILION WALL the conch sits on: posts + sealed diamond-scale panels (sponge core hidden inside)
+    { const n = 24, rD = ROOF_R + 0.08, y0 = CORE.top + 0.3;
+      for (let i = 0; i < n; i++) {
+        const a = i / n * Math.PI * 2;
+        const post = box(0.16, DRUM_H, 0.22, M.stone, CORE.cx + Math.cos(a) * rD, y0, CORE.cz + Math.sin(a) * rD, { ry: -a });
+        const pan = new THREE.Mesh(new THREE.CylinderGeometry(rD - 0.02, rD - 0.02, DRUM_H - 0.24, 6, 1, true, Math.PI / 2 - a - Math.PI / n + 0.03, Math.PI * 2 / n - 0.06), M.diamond);
+        pan.position.set(CORE.cx, y0 + DRUM_H / 2, CORE.cz); pan.castShadow = true; dynRoot.add(pan);
+      }
+      for (const yy of [y0, y0 + DRUM_H - 0.12]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(rD, 0.09, 6, 64), M.stone); ring.rotation.x = Math.PI / 2; ring.position.set(CORE.cx, yy + 0.06, CORE.cz); staticRoot.add(ring); }
+    }
   }
 
   /* ---- garage (stone) + roof terrace ---- */
-  wall('x', -9, -4, 6, 0, 4.3, 0.3, M.stone, [{ c: -7.75, w: 2.3, h: 2.5, glass: false }, { c: -5.25, w: 2.3, h: 2.5, glass: false }]);
-  wall('z', -6, 6, -9, 0, 4.3, 0.3, M.stone, [{ c: 3.5, w: 0.8, y: 1.3, h: 1.0, arch: true, mullion: true }]);
-  wall('x', -9, -4, -6, 0, 4.3, 0.3, M.stone, []);
+  wall('x', -9, -4, 6, 0, 4.3, 0.3, M.stucco, [{ c: -7.75, w: 2.3, h: 2.5, glass: false }, { c: -5.25, w: 2.3, h: 2.5, glass: false }], { clad: 1 });
+  wall('z', -6, 6, -9, 0, 4.3, 0.3, M.stucco, [{ c: 3.5, w: 0.8, y: 1.3, h: 1.0, arch: true, mullion: true }], { clad: 1 });
+  wall('x', -9, -4, -6, 0, 4.3, 0.3, M.stucco, [], { clad: -1 });
   box(5.3, 0.3, 12.3, M.stone, -6.5, 4.0, 0, { cast: true });
   box(5.0, 0.03, 12, M.flag, -6.5, 4.3, 0, { walk: true, cast: false });
   box(5.6, 0.2, 0.2, M.terracotta, -6.5, 4.3, 6.15); box(5.6, 0.2, 0.2, M.terracotta, -6.5, 4.3, -6.15);
   railing([-9, 4.3, 6.05], [-4, 4.3, 6.05]);
   railing([-9, 4.3, -6.05], [-4, 4.3, -6.05]);
-  railing([-9.05, 4.3, 6.05], [-9.05, 4.3, -1.2]);
-  railing([-9.05, 4.3, -2.8], [-9.05, 4.3, -6.05]);
+  railing([-9.05, 4.3, 6.05], [-9.05, 4.3, -1.0]);
+  railing([-9.05, 4.3, -2.7], [-9.05, 4.3, -6.05]);
   // garage-top pergola-ish planters
   pottedPlant(-8.4, 4.33, 5.4, 1.2, 0); pottedPlant(-4.6, 4.33, 5.4, 1.0, 2); pottedPlant(-8.4, 4.33, -5.3, 1.1, 1);
   pottedPlant(-6.5, 4.33, 5.5, 0.9, 2);
@@ -193,7 +228,7 @@ const DOORS = [];
 
   /* ---- curved exterior staircase (to garage roof terrace) ---- */
   {
-    const cx = -9, cz = 0.2, rIn = 1.5, rOut = 2.8, n = 22, rise = 4.3 / n;
+    const cx = -10.4, cz = 0.2, rIn = 1.5, rOut = 2.8, n = 22, rise = 4.3 / n;
     const a0 = THREE.MathUtils.degToRad(72), a1 = THREE.MathUtils.degToRad(-72);
     const outer = [];
     for (let i = 0; i < n; i++) {
@@ -207,16 +242,17 @@ const DOORS = [];
       outer.push([cx - Math.cos(a) * (rOut - 0.05), rise * (i + 1) + 0.95, cz + Math.sin(a) * (rOut - 0.05)]);
     }
     // top landing
-    box(0.65, 4.3, 1.7, M.stone, -9.32, 0, -2.0, { walk: true });
+    box(1.95, 0.25, 1.6, M.stone, -9.95, 4.05, -1.85, { walk: true });            // bridge landing over to the terrace
+    pillar(0.35, 4.05, 0.35, -10.6, 0, -1.85, { collide: true });
+    railing([-10.9, 4.3, -1.05], [-9.05, 4.3, -1.05]); railing([-10.9, 4.3, -2.65], [-9.05, 4.3, -2.65]);
     // iron hand rail (helix)
-    tube(outer, 0.025, M.iron, { seg: 80 });
-    const bal = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.95, 4), M.iron, n * 2); const m4 = new THREE.Matrix4();
+    tube(outer, 0.045, M.rail, { seg: 80 });
+    const bal = new THREE.InstancedMesh(new THREE.BoxGeometry(0.035, 0.95, 0.035), M.rail, n * 2); const m4 = new THREE.Matrix4();
     for (let i = 0; i < n * 2; i++) {
       const t = (i + 0.5) / (n * 2); const a = lerp(a0, a1, t); const y = 4.3 * Math.ceil(t * n) / n;
       m4.makeTranslation(cx - Math.cos(a) * (rOut - 0.05), y + 0.475, cz + Math.sin(a) * (rOut - 0.05)); bal.setMatrixAt(i, m4);
     }
     dynRoot.add(bal);
-    vine([[-11.5, 0.1, 0.2], [-11.7, 1.5, 0.6], [-11.6, 2.6, -0.4], [-11.0, 3.5, -1.2]], 40);
   }
 
   /* ---- front door (double, arched, dark wood) ---- */
@@ -246,9 +282,15 @@ const DOORS = [];
     const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.9, 2.1, 0.08)), new THREE.LineBasicMaterial({ color: 0x2a1a0e }));
     edges.position.copy(d.leaf.position); d.pivot.add(edges);
   }
-  {
-    const sh = new THREE.Shape(); const r = 0.9; sh.moveTo(-r, 0); sh.lineTo(r, 0); sh.absarc(0, -0.0, r, 0, Math.PI, false); sh.closePath();
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), glassMat); m.rotation.y = -Math.PI / 2; m.position.set(8.92, G + 2.1, 0); dynRoot.add(m);
+  { // tall glass curtain wall in the wavy arch: fixed side lights + arched transom with bronze mullions
+    const bronze = new THREE.MeshStandardMaterial({ color: 0x5a4632, metalness: 0.6, roughness: 0.4 });
+    const sh = new THREE.Shape(); sh.moveTo(-1.87, 0); sh.lineTo(1.87, 0); sh.lineTo(1.87, 0.3); sh.absarc(0, 0.3, 1.87, 0, Math.PI, false); sh.closePath();
+    const tr = new THREE.Mesh(new THREE.ShapeGeometry(sh, 32), glassMat); tr.rotation.y = -Math.PI / 2; tr.position.set(8.92, G + 2.1, 0); dynRoot.add(tr);
+    for (const s of [-1, 1]) { const side = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2.1, 0.95), glassMat); side.position.set(8.92, G + 1.05, s * 1.39); dynRoot.add(side); addCollider(8.85, 9.0, G, G + 2.6, s > 0 ? 0.9 : -1.87, s > 0 ? 1.87 : -0.9); }
+    for (const z of [-1.87, -1.37, -0.9, 0.9, 1.37, 1.87]) { const top = 2.4 + Math.sqrt(Math.max(0, 1.87 * 1.87 - z * z)); box(0.07, top, 0.07, bronze, 8.92, G, z, { cast: false }); }
+    box(0.07, 0.07, 3.74, bronze, 8.92, G + 2.1, 0, { cast: false }); box(0.07, 0.07, 3.34, bronze, 8.92, G + 3.25, 0, { cast: false });
+    const ring = []; for (let i = 0; i <= 32; i++) { const a = Math.PI * i / 32; ring.push([8.92, G + 2.4 + Math.sin(a) * 1.87, Math.cos(a) * 1.87]); }
+    tube(ring, 0.045, bronze, { seg: 64, cast: false, parent: dynRoot });
   }
   const eastCol = addCollider(8.85, 9.0, G, G + 2.6, -0.9, 0.9);
   // porch glass doors (core front, by the sofa)
@@ -268,8 +310,11 @@ const DOORS = [];
   box(4.7, 0.03, 11.7, M.concrete, -6.5, 0, 0, { walk: true, cast: false });
   const gl = new THREE.PointLight(0xffd9a0, 0, 9, 1.5); gl.position.set(-6.5, 3.6, 2); scene.add(gl); interiorLights.push(gl);
   for (const c of [-7.75, -5.25]) {
-    const pivot = new THREE.Group(); pivot.position.set(c, 2.5, 5.78); dynRoot.add(pivot);
-    const leaf = new THREE.Mesh(new THREE.BoxGeometry(2.28, 2.5, 0.07), [M.woodDark, M.woodDark, M.woodDark, M.woodDark, M.garage, M.woodDark]);
+    const pivot = new THREE.Group(); pivot.position.set(c, 2.5, 5.74); dynRoot.add(pivot);
+    const lg = new THREE.BoxGeometry(2.28, 2.5, 0.14); worldUV(lg);
+    const leaf = new THREE.Mesh(lg, [M.steel, M.steel, M.steel, M.steel, M.diamond, M.steel]);
+    for (const [w, h, x, y] of [[2.3, 0.08, 0, 1.21], [2.3, 0.08, 0, -1.21], [0.08, 2.5, -1.11, 0], [0.08, 2.5, 1.11, 0], [2.3, 0.05, 0, 0]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), M.steel); f.position.set(x, y, 0.085); leaf.add(f); }
+    const seal = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.05, 0.16), M.rubber); seal.position.y = -1.27; leaf.add(seal);
     leaf.position.set(0, -1.25, 0); leaf.castShadow = true; pivot.add(leaf);
     const col = addCollider(c - 1.15, c + 1.15, 0, 2.5, 5.7, 6.2);
     GARAGE.push({ pivot, leaf, col, a: 0, target: 0 });
@@ -283,7 +328,14 @@ const DOORS = [];
     for (const [x, z] of [[-0.85, 1.4], [0.85, 1.4], [-0.85, -1.4], [0.85, -1.4]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.25, 20), M.rubber); w.rotation.z = Math.PI / 2; w.position.set(x, 0.33, z); car.add(w); }
     addCollider(-7.5, -5.5, 0, 1.5, -0.7, 3.9); }
 
+  // inside the garage: steps up to a door into the hall / kitchen
+  for (let i = 0; i < 5; i++) box(0.36, 0.18 * (i + 1), 1.4, M.stone, -5.62 + i * 0.36 + 0.18, 0, -1.6, { walk: true, collide: true });
+  const gdr = hingedDoor(-4.0, G, -2.1, 1.0, 1.85, M.door, 1, 'z', 1.6, 1);
+  { const sh = new THREE.Shape(); sh.moveTo(-0.5, 0); sh.lineTo(0.5, 0); sh.absarc(0, 0, 0.5, 0, Math.PI, false); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.08, bevelEnabled: false }), M.woodDark); m.rotation.y = -Math.PI / 2; m.position.set(-4.04, G + 1.8, -1.6); staticRoot.add(m); }
+  const garCol = addCollider(-4.15, -3.85, G, G + 2.3, -2.1, -1.1);
   const DGROUPS = [
+    { name: 'Door to garage', leaves: [gdr], col: garCol, c: new THREE.Vector3(-4.0, G, -1.6) },
     { name: 'Front door', leaves: [fdL, fdR], col: frontCol, c: new THREE.Vector3(-0.5, G, 6.0) },
     { name: 'Glass door', leaves: [edL, edR], col: eastCol, c: new THREE.Vector3(8.92, G, 0) },
     { name: 'Porch doors', leaves: [pdL, pdR], col: porchCol, c: new THREE.Vector3(4.2, G, 4.5) },
@@ -301,7 +353,7 @@ const DOORS = [];
     camera.getWorldPosition(headP);
     for (const grp of DGROUPS) {
       const near = Math.hypot(headP.x - grp.c.x, headP.z - grp.c.z) < (grp.range || 2.7) && Math.abs(headP.y - 1.4 - grp.c.y) < 1.6;
-      const open = grp.held || S.allDoors || near;
+      const open = (grp.garage && S.weather === 'storm') ? false : (grp.held || S.allDoors || near);   // storm doors lock shut
       if (grp.garage) { const g = grp.garage; g.target = open ? 1 : 0; g.a += (g.target - g.a) * Math.min(1, dt * 1.2); g.pivot.rotation.x = g.a * Math.PI / 2 * 0.98; grp.col.on = g.a < 0.6; }
       else { for (const d of grp.leaves) { d.target = open ? 1 : 0; } grp.col.on = grp.leaves[0].a < 0.35; }
     }
@@ -311,6 +363,32 @@ const DOORS = [];
     }
   });
 
+  /* ---- homey, scenic touches ---- */
+  // Bahama shutters + flower boxes on the street-facing windows
+  shutters(-3.0, G + 1.0, 0.9, 1.15, 6.16); shutters(2.0, G + 1.0, 0.9, 1.15, 6.16);
+  shutters(-3.3, U + 0.9, 0.8, 1.0, 6.16); shutters(2.3, U + 0.9, 0.8, 1.0, 6.16);
+  shutters(7.8, G + 0.5, 1.1, 1.85, 4.69);
+  shutters(-1.5, U + 0.85, 1.4, 1.0, -6.16); shutters(1.5, U + 0.9, 0.9, 1.0, -6.16);
+  shutters(3.5, 1.3, 0.8, 0.5, -9.18, 'z');
+  windowBox(-3.0, G + 0.78, 6.3, 0.9); windowBox(2.0, G + 0.78, 6.3, 0.9);
+  windowBox(-3.3, U + 0.68, 6.3, 0.8); windowBox(2.3, U + 0.68, 6.3, 0.8); windowBox(7.8, G + 0.3, 4.83, 1.1);
+  // festoon lights: porch, front terrace, garage roof terrace, under the canopy by the breathing wall
+  stringLights([3.35, G + 2.7, 6.05], [6.1, G + 2.7, 6.05], 0.35); stringLights([6.1, G + 2.7, 6.05], [8.75, G + 2.7, 6.05], 0.35);
+  stringLights([-9.0, 6.3, 6.0], [-4.0, 6.3, 6.0], 0.5); stringLights([-9.0, 6.3, -6.0], [-4.0, 6.3, -6.0], 0.5);
+  for (const z of [6.0, -6.0]) for (const x of [-9.0, -4.0]) { cyl(0.04, 0.04, 2.0, M.woodWarm, x, 4.33, z); }
+  stringLights([10.3, CORE.top - 0.6, 4.45], [10.3, CORE.top - 0.6, -4.45], 0.9, 22);
+  // porch seating nook: cushioned bench, two chairs, little table with lemonade
+  { const b = new THREE.Group(); b.position.set(6.6, G, 5.35); staticRoot.add(b);
+    const bx = (w, h, d, x, y, z, m) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; me.receiveShadow = true; b.add(me); };
+    bx(2.0, 0.08, 0.6, 0, 0.45, 0, M.woodWarm); bx(2.0, 0.5, 0.06, 0, 0.75, 0.3, M.woodWarm);
+    for (const x of [-0.9, 0.9]) bx(0.06, 0.45, 0.55, x, 0.22, 0, M.woodWarm);
+    bx(1.9, 0.12, 0.55, 0, 0.55, 0, M.linen); bx(0.4, 0.35, 0.12, -0.6, 0.78, 0.2, M.cushionBlue); bx(0.4, 0.35, 0.12, 0.6, 0.78, 0.2, M.cushionRust);
+    addCollider(5.6, 7.6, G, G + 1, 5.05, 5.7); }
+  box(0.55, 0.45, 0.55, M.woodWarm, 4.8, G, 5.25);
+  for (let i = 0; i < 2; i++) { const gl = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.12, 12), M.glass); gl.position.set(4.7 + i * 0.18, G + 0.51, 5.25); dynRoot.add(gl); }
+  pottedPlant(8.5, G, 5.3, 1.3, 0); pottedPlant(3.7, G, 5.6, 1.1, 2);
+  // bougainvillea climbing the canopy columns by the breathing wall
+
   /* ---- lanterns ---- */
   lantern(-1.7, G + 1.9, 6.12, 0, true); lantern(0.7, G + 1.9, 6.12, 0, false);
   lantern(-6.5, 2.7, 6.15, 0, true);
@@ -319,10 +397,7 @@ const DOORS = [];
   lantern(4.2, G + 2.2, 4.66, 0, false);
 
   /* ---- vines on walls & pillars, flowers ---- */
-  vine([[-3.9, 0.9, 6.15], [-3.7, 2.2, 6.2], [-3.2, 3.4, 6.2], [-2.6, 4.0, 6.2], [-1.6, 4.2, 6.25]], 60);
   vine([[-4.05, 0.2, 6.2], [-4.1, 1.8, 6.22], [-4.4, 3.2, 6.22], [-5.3, 3.9, 6.22]], 50);
-  vine([[3.35, G, 6.25], [3.35, G + 1.5, 6.25], [3.5, G + 2.6, 6.2], [4.5, G + 2.9, 6.2]], 40);
-  vine([[8.75, G, 6.25], [8.75, G + 1.8, 6.25], [8.4, G + 2.7, 6.2]], 30);
 
   /* ---- front garden, low stone wall with 6435, olive tree ---- */
   box(7.0, 0.08, 2.2, M.mulch, 5.5, 0, 8.5, { cast: false });

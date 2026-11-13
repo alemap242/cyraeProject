@@ -15,38 +15,40 @@ function colorize(geo, fn) {
   for (let i = 0; i < p.count; i++) { fn(c, p.getX(i), p.getY(i), p.getZ(i)); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); return geo;
 }
-/* One body-whorl segment of the conch: lip -> knobbed shoulder -> second whorl step -> spire base.
-   Hinge (on the curved track) is at the origin; the segment runs inward along -x. */
+/* One shell petal (as in the hand draft): fluted, broad, pointed, with a wavy lip.
+   Closed it forms part of a spiral dome; bloomed (morph target) it lies flat, radiating out like a flower.
+   Hinge (on the curved track) is at the origin; closed, the petal runs inward along -x. */
 function petalGeometry(N, R, H, twist) {
-  const prof = new THREE.SplineCurve([
-    [1.0, 0.0], [1.07, 0.22], [1.15, 0.5], [1.21, 0.72], [1.16, 0.8], [0.98, 0.86],
-    [0.8, 0.9], [0.66, 0.96], [0.52, 1.0], [0.44, 1.03]].map(q => new THREE.Vector2(q[0], q[1])));
-  const su = 44, sv = 12; const pos = [], col = [], uv = [], idx = [], bpos = [];
-  const sR = R / 3.9;
-  const bloomAt = (u, v, out) => {   // flat radiating petal, gently cupped and drooping, with a slight spiral sweep
-    const d = u * R * 1.05, w = R * 0.36 * Math.sin(Math.PI * Math.min(1, u * 0.92 + 0.06));
-    const lat = v * 2 * w, sw = 0.4 * u;
-    out.set(d * Math.cos(sw) - lat * Math.sin(sw), -0.45 * u * u * sR + 0.5 * sR * v * v * (0.3 + u) + 0.02 * Math.sin(u * 90), d * Math.sin(sw) + lat * Math.cos(sw));
-    return out;
+  const su = 40, sv = 16; const pos = [], col = [], uv = [], idx = [], bpos = [];
+  const halfW = Math.PI / N * 1.28; const c = new THREE.Color(), sR = R / 3.9;
+  const BONE = new THREE.Color(0xf3ebdd), GROOVE = new THREE.Color(0xb7a68e), WARM = new THREE.Color(0xe8cdb4);
+  const flute = (u, v) => Math.abs(Math.sin((v + 0.5) * Math.PI * 5)) ;            // 5 radial flutes per petal
+  const edge = (u, v) => 1 - Math.pow(Math.abs(v) * 2, 6);                           // thin out at the edges
+  const bloomAt = (u, v, out) => {
+    const d = u * R * 1.12;
+    const w = R * 0.42 * Math.pow(Math.sin(Math.PI * Math.min(1, u * 0.9 + 0.08)), 0.75) * (1 - 0.35 * u);   // broad, pointed tip
+    const lat = v * 2 * w, sw = 0.55 * u;                                            // swirl, like the drafted top view
+    const y = -0.35 * u * u * sR + 0.45 * sR * v * v * (0.2 + u) + 0.07 * sR * flute(u, v) * edge(u, v) + 0.03 * Math.sin(u * 40) * Math.abs(v);
+    return out.set(d * Math.cos(sw) - lat * Math.sin(sw), y, d * Math.sin(sw) + lat * Math.cos(sw));
   };
   const BV = new THREE.Vector3();
-  const halfW = Math.PI / N * 1.12; const c = new THREE.Color();
-  const P = new THREE.Vector2();
   for (let i = 0; i <= su; i++) {
-    const u = i / su; prof.getPoint(u, P);
-    const r = R * P.x, ang = twist * Math.pow(u, 1.2);
+    const u = i / su;
+    const r = R * (1 - u * 0.985), ang = twist * Math.pow(u, 1.1);
+    const yDome = H * Math.pow(Math.sin(u * Math.PI / 2), 1.15);
     for (let j = 0; j <= sv; j++) {
       const v = j / sv - 0.5;
-      const a = ang + v * 2 * halfW;
-      const growth = 0.018 * Math.sin(u * 90) + 0.01 * Math.sin(u * 230);          // fine growth lines
-      const cord = 0.03 * Math.sin((v + 0.5) * Math.PI * 6) * smooth(1 - u * 1.6);  // spiral cords on the body
-      const bulge = 0.12 * Math.cos(v * Math.PI) * Math.sin(Math.min(1, u * 2.2) * Math.PI);
-      const lip = 0 * u < 0 ? 0 : 0; const lip0 = u < 0.1 ? -0.22 * Math.pow(1 - u / 0.1, 2) * (0.5 + Math.abs(Math.sin((v + 0.5) * Math.PI * 2))) : 0;
-      const flare = u < 0.1 ? 0.18 * (1 - u / 0.1) * (0.6 + 0.4 * Math.abs(Math.sin((v + 0.5) * Math.PI * 2))) : 0;
-      const rr_ = r + flare + cord * 0.5;
-      pos.push(rr_ * Math.cos(a) - R, H * P.y + growth + cord + bulge + lip, rr_ * Math.sin(a));
+      const a = ang + v * 2 * halfW * (1 - 0.25 * u);
+      const fl = 0.06 * sR * flute(u, v) * edge(u, v) * (1 - u * 0.6);
+      const bulge = 0.14 * sR * Math.cos(v * Math.PI) * Math.sin(u * Math.PI);
+      const lip = u < 0.08 ? 0.08 * sR * (1 - u / 0.08) * Math.sin((v + 0.5) * Math.PI * 3) : 0;      // wavy scalloped rim
+      const rr_ = r + (u < 0.08 ? 0.12 * sR * (1 - u / 0.08) : 0);
+      pos.push(rr_ * Math.cos(a) - R, yDome + fl + bulge + lip + 0.01 * Math.sin(u * 120), rr_ * Math.sin(a));
       bloomAt(u, v, BV); bpos.push(BV.x, BV.y, BV.z);
-      shellColor(c, u, v, u * 34 + v * 1.5); col.push(c.r, c.g, c.b); uv.push(u, v + 0.5);
+      const f = flute(u, v);
+      c.copy(BONE).lerp(GROOVE, 0.55 * (1 - f) * edge(u, v)).lerp(WARM, 0.25 * Math.sin(u * 9 + 1) ** 2);
+      if (Math.abs(v) > 0.46) c.lerp(GROOVE, 0.5);                                  // dark drafted outline at edges
+      col.push(c.r, c.g, c.b); uv.push(u, v + 0.5);
     }
   }
   for (let i = 0; i < su; i++) for (let j = 0; j < sv; j++) { const a = i * (sv + 1) + j, b = a + sv + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
@@ -57,57 +59,22 @@ function petalGeometry(N, R, H, twist) {
   g.setIndex(idx); g.computeVertexNormals();
   { const tmp = new THREE.BufferGeometry(); tmp.setAttribute('position', new THREE.Float32BufferAttribute(bpos, 3)); tmp.setIndex(idx); tmp.computeVertexNormals();
     g.morphAttributes.position = [tmp.attributes.position]; g.morphAttributes.normal = [tmp.attributes.normal]; }
-  g = g.toNonIndexed();
-  // knobs (tubercles) on the shoulder and on the second whorl step
-  const parts = [g];
-  for (const [t, rad, len, tilt] of [[0.34, 0.36, 1.25, 0.25], [0.66, 0.22, 0.7, 0.6]]) {
-    prof.getPoint(t, P); const r = R * P.x, ang = twist * Math.pow(t, 1.2);
-    const k = new THREE.ConeGeometry(rad * R / 4.2, len * R / 4.2, 9, 3); k.translate(0, len * R / 4.2 / 2, 0);
-    // blunt, slightly hooked knob
-    const kp = k.attributes.position; for (let i = 0; i < kp.count; i++) { const y = kp.getY(i); kp.setX(i, kp.getX(i) * (1 + 0.25 * Math.sin(y * 3))); }
-    const dir = new THREE.Vector3(Math.cos(ang) * 0.8, tilt + 0.5, Math.sin(ang) * 0.8).normalize();
-    k.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir));
-    k.translate(r * Math.cos(ang) - R, H * P.y - 0.05, r * Math.sin(ang));
-    k.deleteAttribute('normal'); k.computeVertexNormals();
-    colorize(k, (cc, x, y) => cc.copy(C_CREAM).lerp(C_TAN, 0.3 + 0.3 * Math.sin(y * 12)));
-    { const ax = r * Math.cos(ang) - R, ay = H * P.y - 0.05, az = r * Math.sin(ang); bloomAt(t, 0, BV);
-      const kp2 = k.attributes.position, kb = new Float32Array(kp2.count * 3);
-      for (let i = 0; i < kp2.count; i++) { kb[i * 3] = kp2.getX(i) - ax + BV.x; kb[i * 3 + 1] = (kp2.getY(i) - ay) * 0.6 + BV.y; kb[i * 3 + 2] = kp2.getZ(i) - az + BV.z; }
-      k.morphAttributes.position = [new THREE.BufferAttribute(kb, 3)]; k.morphAttributes.normal = [k.attributes.normal.clone()]; }
-    parts.push(k.toNonIndexed());
-  }
-  return mergeGeometries(parts);
+  return g.toNonIndexed();
 }
-/* The conch spire: stacked whorls, each with a ring of knobs, spiralling to a point */
+/* The centre whorl: a low conch spiral cap (seen from above it is the spiral eye of the flower) */
 function spireGeometry(R) {
-  const parts = []; let y = 0, rb = 0.46 * R; const s = R / 4.2;
-  for (let k = 0; k < 12; k++) {
-    const h = 0.82 * s * Math.pow(0.9, k), rt = rb * 0.82;
-    const pts = [[0.02, 0], [rb * 0.9, 0], [rb * 1.06, h * 0.28], [rb * 1.1, h * 0.42], [rb * 0.95, h * 0.62], [rt * 1.02, h * 0.95], [0.02, h]].map(q => new THREE.Vector2(q[0], q[1]));
-    const lg = new THREE.LatheGeometry(pts, 28); lg.translate(0, y, 0);
+  const parts = []; let y = 0, rb = 0.2 * R; const s = R / 3.9;
+  for (let k = 0; k < 6; k++) {
+    const h = 0.28 * s * Math.pow(0.85, k), rt = rb * 0.72;
+    const pts = [[0.02, 0], [rb * 0.92, 0], [rb * 1.04, h * 0.35], [rb * 0.98, h * 0.6], [rt * 1.02, h * 0.95], [0.02, h]].map(q => new THREE.Vector2(q[0], q[1]));
+    const lg = new THREE.LatheGeometry(pts, 32); lg.translate(0, y, 0);
     lg.deleteAttribute('normal'); lg.computeVertexNormals();
-    colorize(lg, (cc, x, yy, z) => shellColor(cc, 0.8, 0, yy * 9 + Math.atan2(z, x) * 0.5));
-    parts.push(lg.toNonIndexed());
-    const n = Math.max(6, 11 - k);
-    for (let i = 0; i < n; i++) {
-      const a = i / n * Math.PI * 2 + k * 0.45;   // offset each whorl -> spiral
-      const kr = rb * 0.17, kl = rb * 0.5;
-      const cone = new THREE.ConeGeometry(kr, kl, 8, 1); cone.translate(0, kl / 2, 0);
-      cone.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(Math.cos(a), 0.9, Math.sin(a)).normalize()));
-      cone.translate(Math.cos(a) * rb * 1.0, y + h * 0.38, Math.sin(a) * rb * 1.0);
-      cone.deleteAttribute('normal'); cone.computeVertexNormals();
-      colorize(cone, cc => cc.copy(C_CREAM).lerp(C_TAN, 0.25));
-      parts.push(cone.toNonIndexed());
-    }
-    y += h * 0.92; rb = rt;
+    colorize(lg, (cc, x, yy, z) => { const sp = Math.sin(Math.atan2(z, x) * 1 + yy * 18); cc.set(0xf3ebdd).lerp(new THREE.Color(0xb7a68e), 0.35 * (0.5 + 0.5 * sp)); });
+    parts.push(lg.toNonIndexed()); y += h * 0.9; rb = rt;
   }
-  const tip = new THREE.ConeGeometry(rb, 0.35 * s, 12); tip.translate(0, y + 0.17 * s, 0); colorize(tip, cc => cc.copy(C_TAN));
-  parts.push(tip.toNonIndexed());
-  // underside disc (pink nacre)
-  const disc = new THREE.CircleGeometry(0.46 * R * 0.95, 32); disc.rotateX(Math.PI / 2); colorize(disc, cc => cc.copy(C_BLUSH));
-  parts.push(disc.toNonIndexed());
-  for (const g of parts) for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(k)) g.deleteAttribute(k);
-  for (const g of parts) if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+  const tip = new THREE.ConeGeometry(rb, 0.18 * s, 16); tip.translate(0, y + 0.09 * s, 0); colorize(tip, cc => cc.set(0xe8dccb)); parts.push(tip.toNonIndexed());
+  const disc = new THREE.CircleGeometry(0.2 * R, 32); disc.rotateX(Math.PI / 2); colorize(disc, cc => cc.set(0xe9cfc4)); parts.push(disc.toNonIndexed());
+  for (const g of parts) { for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(k)) g.deleteAttribute(k); if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2)); }
   return { geo: mergeGeometries(parts), height: y };
 }
 T.shellBump = canvasTex(512, 512, (g, w, h) => {
@@ -115,17 +82,19 @@ T.shellBump = canvasTex(512, 512, (g, w, h) => {
   for (let x = 0; x < w; x += rr(2, 6)) { g.fillStyle = `rgba(${rnd() < 0.5 ? '255,255,255' : '0,0,0'},${rr(0.08, 0.3)})`; g.fillRect(x, 0, rr(1, 3), h); }  // growth lines (across u)
   for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(0,0,0,${rr(0.05, 0.2)})`; g.fillRect(rnd() * w, rnd() * h, rr(1, 3), rr(1, 3)); }      // pitting
 }, { color: false });
-const shellMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.0, side: THREE.DoubleSide,
+const shellMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.0, side: THREE.DoubleSide,
   bumpMap: T.shellBump, bumpScale: 2.5, clearcoat: 0.35, clearcoatRoughness: 0.35, sheen: 0.4, sheenColor: new THREE.Color(0xffd8cc), sheenRoughness: 0.5 });
 shellMat.onBeforeCompile = (sh) => { // pearly sheen on the back faces (pink nacre underside)
   sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n if(!gl_FrontFacing){ diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.96,0.72,0.70), 0.55); }');
 };
 
 function makeConch(parent, cx, baseY, cz, opt = {}) {
-  const N = 13, R = ROOF_R, H = CONCH_H, twist = 1.25;
+  const N = 16, R = ROOF_R, H = CONCH_H, twist = 1.9;
   const SEMI = THREE.MathUtils.degToRad(26), BLOOM = THREE.MathUtils.degToRad(110);
   const root = new THREE.Group(); root.position.set(cx, baseY, cz); parent.add(root);
-  const spin = new THREE.Group(); root.add(spin);
+  const hinge = new THREE.Group(); hinge.position.set(0, 0, -(R + 0.1)); root.add(hinge);
+  const lidHolder = new THREE.Group(); lidHolder.position.set(0, 0, R + 0.1); hinge.add(lidHolder);
+  const spin = new THREE.Group(); lidHolder.add(spin);
   const geo = petalGeometry(N, R, H, twist);
   const petals = [];
   const rollerGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.2, 12); rollerGeo.rotateX(Math.PI / 2);
@@ -169,33 +138,48 @@ function makeConch(parent, cx, baseY, cz, opt = {}) {
   const gasket = new THREE.Mesh(new THREE.TorusGeometry(R + 0.03, 0.04, 8, 96), M.rubber); gasket.rotation.x = Math.PI / 2; gasket.position.y = 0.04; hw.add(gasket);
 
   const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  const ptLocal = new THREE.Vector3(0.05 * R, 0.4 * H, 0), ptBloom = new THREE.Vector3(0.25 * R, -0.05, 0);
+  const ptLocal = new THREE.Vector3(-0.3 * R, 0.45 * H, 0), ptBloom = new THREE.Vector3(0.3 * R, -0.05, 0);
+  // SPIRAL ROOF: 16 fluted shell petals. Stage 2 = rotate 120° clockwise + lift; Stage 3 = each petal in turn
+  // tips over (gravity: accelerating), drops out & down on the curved track, settles with a small bounce,
+  // unfolding into the spiral rosette.
+  mast.visible = false;
+  const DEG = Math.PI / 180;
   function set(p) {
-    let spinA, alpha, slide;
-    if (p <= 0.5) { const q = smooth(p / 0.5); spinA = -THREE.MathUtils.degToRad(120) * q; alpha = SEMI * q; slide = 0; }
-    else { const q = (p - 0.5) / 0.5; spinA = -THREE.MathUtils.degToRad(120); alpha = lerp(SEMI, -0.04, smooth(clamp(q / 0.8, 0, 1))); slide = smooth(clamp((q - 0.15) / 0.85, 0, 1)); }
-    const morph = p <= 0.5 ? 0 : smooth(clamp((p - 0.5) / 0.4, 0, 1));
+    const spinA = -120 * DEG * smooth(Math.min(p, 0.5) / 0.5);
     spin.rotation.y = spinA;
-    const lift = 1.7 * smooth(p / 0.5) + 1.2 * smooth((p - 0.5) / 0.5);
-    const baseY = H * 0.98 + lift;
-    spire.position.y = baseY;
-    mast.position.y = -0.6; mast.scale.set(1, baseY + 0.6, 1);
+    hinge.position.set(0, 0, -(R + 0.1)); hinge.rotation.set(0, 0, 0);
+    const lift = 0.9 * smooth(p / 0.5) + 1.1 * smooth((p - 0.5) / 0.5);
+    spire.position.y = H * 0.93 + lift;
     gasket.material = p < 0.02 ? M.rubber : M.iron;
-    const qa = slide * Math.PI / 2;
-    const hr = R + 0.55 * Math.sin(qa), hy = -0.12 * (1 - Math.cos(qa));
-    for (const P of petals) {
+    const q = p <= 0.5 ? 0 : (p - 0.5) / 0.5;
+    for (let i = 0; i < petals.length; i++) {
+      const P = petals[i];
+      // stagger around the spiral so they fall one after another
+      const qi = clamp((q - (i / petals.length) * 0.4) / 0.6, 0, 1);
+      let alpha, morph, slide;
+      if (p <= 0.5) { alpha = SEMI * smooth(p / 0.5); morph = 0; slide = 0; }
+      else {
+        const fall = qi < 0.8 ? Math.pow(qi / 0.8, 2) : 1;                       // accelerating fall
+        const t2 = clamp((qi - 0.8) / 0.2, 0, 1);
+        const bounce = qi > 0.8 ? 0.12 * Math.exp(-3.5 * t2) * Math.abs(Math.sin(t2 * Math.PI * 2.5)) : 0;
+        morph = clamp(fall - bounce, 0, 1);
+        alpha = lerp(SEMI, -0.04, fall) + bounce * 0.6;
+        slide = smooth(clamp((qi - 0.1) / 0.75, 0, 1));
+      }
+      const qa = slide * Math.PI / 2;
+      const hr = R + 0.55 * Math.sin(qa), hy = -0.12 * (1 - Math.cos(qa));
       P.pivot.position.set(Math.cos(P.th) * hr, hy, Math.sin(P.th) * hr);
       P.pivot.rotation.set(0, -P.th, 0);
       P.tilt.rotation.set(0, 0, -alpha);
       P.mesh.morphTargetInfluences[0] = morph;
-      // actuator: base fixed on the drum ring (rotates with spin), end on petal underside
+      P.barrel.visible = P.rod.visible = true;
       P.tilt.updateMatrix(); P.pivot.updateMatrix();
       tmp.copy(ptLocal).lerp(ptBloom, morph).applyMatrix4(P.tilt.matrix).applyMatrix4(P.pivot.matrix);
       const base = tmp2.set(Math.cos(P.th) * (R - 0.25), -0.5, Math.sin(P.th) * (R - 0.25));
       const d = tmp.clone().sub(base); const L = d.length(); d.normalize();
-      const q = new THREE.Quaternion().setFromUnitVectors(up, d);
-      P.barrel.position.copy(base); P.barrel.quaternion.copy(q); P.barrel.scale.set(1, Math.min(0.75, L * 0.6), 1);
-      P.rod.position.copy(base); P.rod.quaternion.copy(q); P.rod.scale.set(1, L, 1);
+      const qq = new THREE.Quaternion().setFromUnitVectors(up, d);
+      P.barrel.position.copy(base); P.barrel.quaternion.copy(qq); P.barrel.scale.set(1, Math.min(0.75, L * 0.6), 1);
+      P.rod.position.copy(base); P.rod.quaternion.copy(qq); P.rod.scale.set(1, L, 1);
     }
   }
   set(0);
@@ -207,17 +191,20 @@ const conch = makeConch(dynRoot, CORE.cx, CORE.top + 0.3 + DRUM_H, CORE.cz);
    2. DIAMOND SHINGLE WAVE WALL — breathing building skin
    ============================================================ */
 const WALL = (() => {
-  const s = 0.32, d = s / Math.SQRT2 * 1.14;
+  const s = 0.22, d = s / Math.SQRT2 * 1.14, HT = d * Math.SQRT2 / 2;
   const U0 = -4.2, U1 = 4.2, V1 = CORE.top - 0.45 - G;
+  const AR = 1.87, AY = 2.4;
+  const archTop = (u) => AY + Math.sqrt(Math.max(0, AR * AR - u * u));
   const tiles = [];
   for (let j = 0; j * s / 2 <= V1; j++) for (let i = 0; ; i++) {
     const u = U0 + (i + (j % 2) * 0.5) * s; if (u > U1) break; const v = j * s / 2 + 0.08;
-    // arched door opening
-    if (Math.abs(u) < 1.05 && v < 2.05 + Math.sqrt(Math.max(0, 1.05 * 1.05 - u * u)) + 0.06) continue;
+    // tall arched glass entrance + glowing lattice screens either side
+    if (Math.abs(u) < 1.98 && v < archTop(u) + 0.08) continue;
+    if (Math.abs(u) > 2.15 && Math.abs(u) < 3.1 && v < 2.75) continue;
     tiles.push({ u, v, diag: ((u - U0) / (U1 - U0) + v / V1) / 2, edge: smooth(Math.min(U1 - Math.abs(u), v, V1 - v) / 0.7) });
   }
-  const geo = new THREE.BoxGeometry(d, d, 0.016);
-  geo.rotateZ(Math.PI / 4);
+  const geo = new THREE.BoxGeometry(d, d, 0.014);
+  geo.rotateZ(Math.PI / 4); geo.translate(0, -HT, 0);   // pivot on the top corner, like a real scale
   const glowAttr = new THREE.InstancedBufferAttribute(new Float32Array(tiles.length), 1);
   geo.setAttribute('aGlow', glowAttr);
   const mat = new THREE.MeshStandardMaterial({ map: T.shingle, roughness: 0.7, transparent: false });
@@ -233,21 +220,44 @@ const WALL = (() => {
   // glowing perforated backing (seen through the open shingles)
   const backMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, emissive: 0xffa04a, emissiveMap: T.perf, emissiveIntensity: 0, roughness: 0.9 });
   const skinShape = () => { const sh = new THREE.Shape(); sh.moveTo(-4.3, 0); sh.lineTo(4.3, 0); sh.lineTo(4.3, V1 + 0.1); sh.lineTo(-4.3, V1 + 0.1); sh.closePath();
-    const h = new THREE.Path(); h.moveTo(-0.92, 0); h.lineTo(0.92, 0); h.lineTo(0.92, 2.0); h.absarc(0, 2.0, 0.92, 0, Math.PI, false); h.lineTo(-0.92, 0); sh.holes.push(h);
+    const h = new THREE.Path(); h.moveTo(-AR, 0); h.lineTo(AR, 0); h.lineTo(AR, AY); h.absarc(0, AY, AR, 0, Math.PI, false); h.lineTo(-AR, 0); sh.holes.push(h);
     const g = new THREE.ShapeGeometry(sh, 24); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 8.6 * 3, uv.getY(i) / 8.6 * 3); return g; };
   const back = new THREE.Mesh(skinShape(), backMat); back.rotation.y = Math.PI / 2; back.position.set(8.965, G, 0); dynRoot.add(back);
   // sponge core layer revealed in X-ray
   const sponge = new THREE.Mesh(skinShape(), new THREE.MeshStandardMaterial({ map: T.sponge, emissive: 0x6b4a10, emissiveIntensity: 0.25, roughness: 1 }));
   sponge.material.map = T.sponge.clone(); sponge.material.map.repeat.set(1.3, 1.3); sponge.material.map.needsUpdate = true;
   sponge.rotation.y = Math.PI / 2; sponge.position.set(8.985, G, 0); sponge.visible = false; dynRoot.add(sponge);
+  T.jali = canvasTex(256, 512, (g, w, h) => {
+    g.fillStyle = '#b9a38a'; g.fillRect(0, 0, w, h);
+    speckle(g, w, h, 3000, ['#8d7a63', '#e0d2bf']);
+    g.globalCompositeOperation = 'destination-out';
+    for (let y = 10, r = 0; y < h - 20; y += 26, r++) for (let x = 12 + (r % 2) * 22; x < w - 30; x += 44) g.fillRect(x, y, 22, 14);
+    g.globalCompositeOperation = 'source-over';
+  });
+  const jaliMat = new THREE.MeshStandardMaterial({ color: 0x3a2412, emissive: 0xffb060, emissiveIntensity: 1, roughness: 1 });
+  const jaliScreen = new THREE.MeshStandardMaterial({ map: T.jali, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 });
+  for (const zc of [-2.62, 2.62]) {
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 2.7), jaliMat); glow.rotation.y = Math.PI / 2; glow.position.set(8.97, G + 1.35, zc); dynRoot.add(glow);
+    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.7, 0.95), jaliScreen); scr.position.set(9.1, G + 1.35, zc); scr.castShadow = true; dynRoot.add(scr);
+  }
+  const canopyLight = new THREE.PointLight(0xffc27a, 0, 7, 1.5); canopyLight.position.set(10.2, G + 3.3, 0); scene.add(canopyLight);
   const glowLight = new THREE.PointLight(0xffa860, 0, 8, 1.4); glowLight.position.set(10.3, G + 2.8, 2.6); scene.add(glowLight);
   const glowLight2 = new THREE.PointLight(0xffa860, 0, 8, 1.4); glowLight2.position.set(10.3, G + 4.5, -2.6); scene.add(glowLight2);
 
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), qb = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)), qt = new THREE.Quaternion(), qy = new THREE.Quaternion();
   const ax = new THREE.Vector3(0, 0, 1), ay = new THREE.Vector3(0, 1, 0), p = new THREE.Vector3(), sc = new THREE.Vector3(1, 1, 1);
-  const A = 0.62;
+  const A = 0.16;
   let avgWave = 0, avgOpen = 0;
+  // flowing, water-like horizontal waves
   function wave(u, v, t) { return 0.5 + 0.5 * Math.sin(2 * Math.PI * v / 2.6 + 1.1 * Math.sin(u * 0.6 + t * 0.3) + t * 0.4); }
+  // the wall's lower edge curls out into a canopy over the arched entrance
+  function lip(u, v) {
+    if (Math.abs(u) > 2.6) return 0;
+    const dE = v - archTop(Math.min(Math.abs(u), AR - 0.01));
+    if (dE < 0) return 0;
+    return Math.exp(-Math.pow(dE / 0.85, 2)) * smooth((2.6 - Math.abs(u)) / 0.9);
+  }
+  const disp = (T_, u, v, t, wf) => A * wf * T_.edge * wave(u, v, t);
   function update(t) {
     const Sv = S.wall.p;
     let sw = 0, so = 0;
@@ -255,27 +265,28 @@ const WALL = (() => {
       const T_ = tiles[k];
       const wf = smooth(clamp(Math.min(Sv, 1) * 1.7 - T_.diag * 0.7, 0, 1));
       const of = smooth(clamp(Math.max(Sv - 1, 0) * 1.7 - T_.diag * 0.7, 0, 1));
-      const doorFade = smooth((Math.hypot(T_.u, Math.max(0, T_.v - 2.0)) - 1.05) / 0.9);
-      const amp = A * wf * T_.edge * doorFade;
       const w = wave(T_.u, T_.v, t);
-      const e = 0.01;
-      const dv = (wave(T_.u, T_.v + e, t) - w) / e * amp, du = (wave(T_.u + e, T_.v, t) - w) / e * amp;
+      const dd = disp(T_, T_.u, T_.v, t, wf), e = 0.02;
+      const dv = (disp(T_, T_.u, T_.v + e, t, wf) - dd) / e, du = (disp(T_, T_.u + e, T_.v, t, wf) - dd) / e;
       const bumpW = 4 * wf * (1 - wf), bumpO = 4 * of * (1 - of);   // travelling diagonal ripple during a change
-      const pat = 0.55 + 0.45 * Math.sin((Math.abs(T_.u) + Math.abs(T_.v - 3.1)) * 3.2 - t * 1.2);
-      const openA = of * (0.55 + 0.5 * pat) * T_.edge + bumpO * 0.25 + bumpW * 0.18;
-      p.set(9.03 + 0.02 + amp * w + (bumpW + bumpO) * 0.06, G + T_.v, T_.u);
+      const pat = smooth((w - 0.35) / 0.5);                            // perforations open on the bulges
+      const fo = smooth(clamp((Sv - 2) * 1.7 - T_.diag * 0.7, 0, 1));
+      const openA = (of * 0.1 + fo * 0.12) * T_.edge + bumpO * 0.08 + bumpW * 0.06;
+      sc.setScalar(1 - (of * (0.22 + 0.16 * pat) + fo * 0.2) * T_.edge);
+      p.set(9.02 + dd + (bumpW + bumpO) * 0.015, G + T_.v + HT, T_.u);
       qt.setFromAxisAngle(ax, -Math.atan(dv) - openA);
       qy.setFromAxisAngle(ay, Math.atan(du));
       q.copy(qt).multiply(qy).multiply(qb);
       m4.compose(p, q, sc); inst.setMatrixAt(k, m4);
-      glowAttr.array[k] = (0.22 * wf * (1 - w) + 0.55 * of * pat);
+      glowAttr.array[k] = lerp(0.22 * wf * w * w + 0.7 * of * pat, 0.9, fo);
       sw += wf; so += of;
     }
     avgWave = sw / tiles.length; avgOpen = so / tiles.length;
     inst.instanceMatrix.needsUpdate = true; glowAttr.needsUpdate = true;
     glowU.value = ENV.glow;
-    backMat.emissiveIntensity = ENV.glow * (0.15 + 0.5 * avgWave + 2.2 * avgOpen) + 0.4 * avgOpen;
+    backMat.emissiveIntensity = ENV.glow * (0.15 + 0.6 * avgWave + 2.4 * avgOpen) + 0.4 * avgOpen;
     glowLight.intensity = glowLight2.intensity = ENV.glow * (avgWave * 3 + avgOpen * 9);
+    jaliMat.emissiveIntensity = 0.6 + ENV.glow * 1.6; canopyLight.intensity = ENV.glow * (1 + avgWave * 6);
   }
   function setXray(on) {
     mat.transparent = on; mat.opacity = on ? 0.16 : 1; mat.depthWrite = !on; mat.needsUpdate = true;
@@ -283,6 +294,71 @@ const WALL = (() => {
   }
   return { update, setXray, get open() { return avgOpen; }, get waveAmt() { return avgWave; }, count: tiles.length };
 })();
+
+/* ---- the same breathing diamond-scale skin on EVERY exterior wall (moves with the wall control) ---- */
+const SKIN = (() => {
+  const s = 0.3, d = s / Math.SQRT2 * 1.14, M_ = 0.12, HT = d * Math.SQRT2 / 2;
+  const tiles = [];
+  const inOpen = (P, x, v) => P.ops.some(o => {
+    if (x < o.x0 - M_ || x > o.x1 + M_ || v < o.yb - M_) return false;
+    const top = o.arch ? (o.yt - o.r) + Math.sqrt(Math.max(0, (o.r + M_) ** 2 - (x - o.cx) ** 2)) : o.yt;
+    return v < top + M_;
+  });
+  const openDist = (P, x, v) => { let m = 9; for (const o of P.ops) { const dx = Math.max(o.x0 - x, 0, x - o.x1), dy = Math.max(o.yb - v, 0, v - o.yt); m = Math.min(m, Math.hypot(dx, dy)); } return m; };
+  SKIN_PANELS.forEach((P, pi) => {
+    for (let j = 0; j * s / 2 <= P.h - 0.2; j++) for (let i = 0; ; i++) {
+      const x = 0.1 + (i + (j % 2) * 0.5) * s; if (x > P.len - 0.1) break; const v = j * s / 2 + 0.16;
+      if (inOpen(P, x, v)) continue;
+      const edge = smooth(Math.min(x, P.len - x, v, P.h - v) / 0.6) * smooth(openDist(P, x, v) / 0.55);
+      tiles.push({ P, x, v, edge, diag: (x / P.len + v / P.h) / 2, ph: pi * 1.7 });
+    }
+  });
+  const geo = new THREE.BoxGeometry(d, d, 0.014); geo.rotateZ(Math.PI / 4); geo.translate(0, -HT, 0);
+  const glowAttr = new THREE.InstancedBufferAttribute(new Float32Array(tiles.length), 1); geo.setAttribute('aGlow', glowAttr);
+  const mat = new THREE.MeshStandardMaterial({ map: T.shingle, roughness: 0.75 });
+  const glowU = { value: 1 };
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uGlow = glowU;
+    sh.vertexShader = 'attribute float aGlow;\nvarying float vGlow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow = aGlow;');
+    sh.fragmentShader = 'uniform float uGlow;\nvarying float vGlow;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0,0.58,0.24) * vGlow * uGlow;');
+  };
+  const inst = new THREE.InstancedMesh(geo, mat, tiles.length); inst.castShadow = true; inst.receiveShadow = true; inst.frustumCulled = false; dynRoot.add(inst);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), qa = new THREE.Quaternion(), pos = new THREE.Vector3(), sc = new THREE.Vector3(1, 1, 1);
+  const UP = new THREE.Vector3(0, 1, 0), roll = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 4);
+  const Ap = new THREE.Vector3(1, 0, 0), An = new THREE.Vector3(-1, 0, 0);
+  const qBasePos = new THREE.Quaternion(), qBaseNeg = new THREE.Quaternion().setFromAxisAngle(UP, Math.PI);
+  const wave = (u, v, t) => 0.5 + 0.5 * Math.sin(2 * Math.PI * v / 2.6 + 1.1 * Math.sin(u * 0.6 + t * 0.3) + t * 0.4);
+  let lastP = -1;
+  function update(t) {
+    const Sv = S.wall.p;
+    if (Sv === lastP && (S.wallStill || Sv === 0)) return; lastP = Sv;
+    const A = 0.14;
+    for (let k = 0; k < tiles.length; k++) {
+      const T_ = tiles[k], P = T_.P;
+      const wf = smooth(clamp(Math.min(Sv, 1) * 1.7 - T_.diag * 0.7, 0, 1));
+      const of = smooth(clamp(Math.max(Sv - 1, 0) * 1.7 - T_.diag * 0.7, 0, 1));
+      const w = wave(T_.x + T_.ph, T_.v, t), w2 = wave(T_.x + T_.ph, T_.v + 0.03, t);
+      const amp = A * wf * T_.edge, dd = amp * w, dv = amp * (w2 - w) / 0.03;
+      const bump = 4 * wf * (1 - wf) + 4 * of * (1 - of);
+      const pat = smooth((w - 0.35) / 0.5);
+      const fo = smooth(clamp((Sv - 2) * 1.7 - T_.diag * 0.7, 0, 1));
+      const openA = (of * 0.1 + fo * 0.12) * T_.edge + bump * 0.06;
+      sc.setScalar(1 - (of * (0.22 + 0.16 * pat) + fo * 0.2) * T_.edge);
+      pos.set(T_.x, T_.v + HT, P.clad * (P.t / 2 + 0.02 + dd + bump * 0.012));
+      // local frame: tile normal = wall normal (clad side); tilt about the wall's horizontal axis
+      q.copy(P.clad > 0 ? qBasePos : qBaseNeg);
+      qa.setFromAxisAngle(P.clad > 0 ? Ap : An, Math.atan(dv) + openA);
+      q.premultiply(qa).multiply(roll);
+      m4.compose(pos, q, sc).premultiply(P.W); inst.setMatrixAt(k, m4);
+      glowAttr.array[k] = lerp(0.2 * wf * w * w + 0.7 * of * pat, 0.9, fo);
+    }
+    inst.instanceMatrix.needsUpdate = true; glowAttr.needsUpdate = true;
+    glowU.value = ENV.glow;
+  }
+  update(0); lastP = -1; update(0);
+  return { update, count: tiles.length, setXray(on) { mat.transparent = on; mat.opacity = on ? 0.16 : 1; mat.depthWrite = !on; mat.needsUpdate = true; } };
+})();
+updaters.push((dt, t) => { SKIN.update(S.wallT); M.skinBack.emissiveIntensity = ENV.glow * (0.1 + 0.5 * WALL.waveAmt + 2.2 * WALL.open); });
 
 /* ============================================================
    3. INTERIOR — stair chimney, garden wall, sea-fan dividers, furniture
@@ -486,7 +562,7 @@ function rug(x, y, z, w, d, mat) { const m = new THREE.Mesh(new THREE.PlaneGeome
   const kz = -5.55;
   box(5.2, 0.86, 0.6, M.woodWarm, -1.35, G, kz, { collide: true });
   box(5.3, 0.05, 0.64, M.counter, -1.35, G + 0.86, kz);
-  box(5.2, 0.6, 0.02, M.tileBlue, -1.35, G + 0.91, -5.86, { cast: false });
+  box(5.2, 0.9, 0.02, M.zellige, -1.35, G + 0.91, -5.86, { cast: false, uv: false });
   box(0.6, 0.86, 2.6, M.woodWarm, -3.6, G, -3.95, { collide: true });
   box(0.64, 0.05, 2.7, M.counter, -3.6, G + 0.86, -3.95);
   for (const x of [-3.4, 0.8]) { box(1.0, 0.03, 0.3, M.woodDark, x, G + 1.75, -5.85 + 0.15); box(1.0, 0.03, 0.3, M.woodDark, x, G + 2.15, -5.85 + 0.15); }
@@ -546,6 +622,66 @@ function rug(x, y, z, w, d, mat) { const m = new THREE.Mesh(new THREE.PlaneGeome
   pottedPlant(8.4, U, 4.0, 1.1, 2); pottedPlant(3.6, U, 4.0, 1.0, 0);
 }
 
+/* ---- making it feel like a home: art, fans, pendants, sconces, plants, canopy bed ---- */
+function art(x, y, z, w, h, ry, k) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; staticRoot.add(g);
+  const fr = new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, h + 0.1, 0.05), M.woodWarm); g.add(fr);
+  const mat = new THREE.Mesh(new THREE.PlaneGeometry(w, h), M.art[k]); mat.position.z = 0.028; g.add(mat);
+}
+art(3.17, G + 1.75, 0.55, 1.3, 0.95, Math.PI / 2, 0);        // living: seascape
+art(6.1, G + 1.85, 4.32, 1.5, 1.05, Math.PI, 1);             // above the sofa: palm print
+art(-3.85, G + 1.75, -1.0 + 2.4, 0.8, 0.6, Math.PI / 2, 2);  // hall: conch study
+art(-3.85, U + 1.55, -4.7, 1.2, 0.85, Math.PI / 2, 0);       // bedroom
+art(2.85, U + 1.5, -2.2, 1.0, 0.75, -Math.PI / 2, 2);        // upstairs landing
+art(2.85, U + 1.5, 3.0 - 1.2, 0.9, 0.7, -Math.PI / 2, 1);
+const FANS_C = [];
+function ceilingFan(x, y, z) {
+  const g = new THREE.Group(); g.position.set(x, y, z); dynRoot.add(g);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35), M.brass); rod.position.y = 0.17; g.add(rod);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.12, 16), M.brass); g.add(hub);
+  const rot = new THREE.Group(); g.add(rot);
+  for (let i = 0; i < 5; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.012, 0.16), M.rattanSolid); b.position.set(Math.cos(i / 5 * 6.283) * 0.42, -0.02, Math.sin(i / 5 * 6.283) * 0.42); b.rotation.y = -i / 5 * 6.283; b.rotation.x = 0.12; rot.add(b); }
+  FANS_C.push(rot);
+}
+ceilingFan(-0.5, U - 0.75, 2.6); ceilingFan(-1.3, U - 0.75, -3.0); ceilingFan(-1.5, U + 2.6, -3.8); ceilingFan(-0.6, U + 2.6, 4.6);
+updaters.push((dt) => { for (const f of FANS_C) f.rotation.y += dt * 2.2; });
+function rattanPendant(x, y, z, r = 0.26, top = U - 0.25) {
+  tube([[x, top, z], [x, y + r, z]], 0.006, M.iron, { seg: 2, cast: false, parent: dynRoot });
+  const s = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), M.rattan); s.position.set(x, y, z); s.castShadow = true; dynRoot.add(s);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(r * 0.3, 10, 8), M.lantern); bulb.position.copy(s.position); dynRoot.add(bulb);
+}
+rattanPendant(-1.8, G + 2.2, -3.0, 0.2); rattanPendant(-0.8, G + 2.2, -3.0, 0.2); rattanPendant(-0.5, G + 2.5, 3.9, 0.3);
+rattanPendant(5.6, G + 2.3, -2.65, 0.3, CORE.top); rattanPendant(6.8, G + 2.45, -2.65, 0.24, CORE.top);
+rattanPendant(-0.5, U + 2.3, 6.2, 0.28, U + 3.0);
+function sconce(x, y, z, ry) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; dynRoot.add(g);
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 12), M.brass); plate.rotation.x = Math.PI / 2; g.add(plate);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.14), M.brass); arm.position.z = 0.07; g.add(arm);
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 0.14, 14, 1, true), M.lampShade); sh.position.set(0, 0.06, 0.15); g.add(sh);
+}
+sconce(4.0, G + 1.9, 4.33, Math.PI); sconce(8.3, G + 1.9, 4.33, Math.PI); sconce(-2.55, U + 1.5, -5.86, 0); sconce(-0.45, U + 1.5, -5.86, 0);
+sconce(-3.86, G + 1.9, 4.6, Math.PI / 2); sconce(3.15, G + 1.9, -0.3, Math.PI / 2);
+// macramé hanging planters
+function macrame(x, y, z) {
+  for (let k = 0; k < 3; k++) { const a = k / 3 * 6.283; tube([[x, y + 1.0, z], [x + Math.cos(a) * 0.14, y + 0.25, z + Math.sin(a) * 0.14], [x + Math.cos(a) * 0.12, y, z + Math.sin(a) * 0.12]], 0.008, M.linen, { seg: 6, cast: false, parent: dynRoot }); }
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.18, 14), M.ceramic); pot.position.set(x, y + 0.04, z); dynRoot.add(pot);
+  foliage(M.leaf, x, y - 0.1, z, 0.25, 0.3, 0.25, 14, 0.2, 0.32);
+}
+macrame(1.6, U + 1.2, 7.0); macrame(-2.6, U + 1.2, 7.0); macrame(0.5, G + 1.6, -5.4); macrame(8.4, G + 1.9, -1.5);
+// big tropical floor plants
+pottedPlant(8.55, G, -1.0, 2.1, 0); pottedPlant(3.5, G, 1.9, 1.9, 0); pottedPlant(-3.4, G, -0.6, 1.6, 0); pottedPlant(-3.4, U, 5.6, 1.9, 0); pottedPlant(2.4, U, -5.4, 1.7, 0);
+// flowers on the dining table
+for (const x of [5.4, 7.0]) foliage(M.foliageDark, x, G + 1.12, -2.65, 0.14, 0.14, 0.14, 10, 0.15, 0.22);
+// rattan poufs + armchair cushions
+cyl(0.28, 0.28, 0.38, M.rattanSolid, 7.4, G, 2.2); cyl(0.26, 0.26, 0.04, M.cushionBlue, 7.4, G + 0.38, 2.2);
+cyl(0.28, 0.28, 0.38, M.rattanSolid, 5.0, G, 2.3); cyl(0.26, 0.26, 0.04, M.cushionRust, 5.0, G + 0.38, 2.3);
+// canopy over the bed with sheer drapes
+{ const bx0 = -2.45, bx1 = -0.55, bz0 = -5.85, bz1 = -3.8;
+  box(1.7, 0.14, 0.12, M.cushionBlue, -1.5, U + 0.62, -5.72); box(0.5, 0.3, 0.12, M.cushionRust, -1.5, U + 0.68, -5.6);
+}
+// kitchen open shelf ceramics + copper pots
+for (let i = 0; i < 7; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.06, 0.07, 16), [M.ceramic, M.tileBlue, M.zellige][i % 3]); b.position.set(-3.85 + i * 0.16, G + 2.2, -5.72); staticRoot.add(b); }
+
 /* ---- curtains that move in the breeze ---- */
 const CURTAINS = [];
 function curtain(x, y, z, w, h, ry) {
@@ -555,7 +691,6 @@ function curtain(x, y, z, w, h, ry) {
   CURTAINS.push({ m, g, base, h, ph: rnd() * 6 });
 }
 curtain(-2.55, U + 2.75, 6.05, 0.9, 2.6, 0); curtain(1.55, U + 2.75, 6.05, 0.9, 2.6, 0);
-curtain(-1.5, U + 2.5, -5.8, 1.9, 1.9, 0);
 curtain(-3.0, G + 2.75, 5.82, 1.1, 2.0, 0); curtain(2.0, G + 2.75, 5.82, 1.1, 2.0, 0);
 curtain(-2.2, G + 2.5, -5.82, 1.8, 1.6, 0);
 updaters.push((dt, t) => {

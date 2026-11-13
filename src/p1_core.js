@@ -9,11 +9,11 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const G = 0.9;    // ground-floor level
 const U = 4.3;    // upper-floor level
 const CORE = { x0: 3, x1: 9, z0: -4.5, z1: 4.5, top: 8.2, cx: 6, cz: 0 };
-const ROOF_R = 3.9, DRUM_H = 0.5, CONCH_H = 3.0;
+const ROOF_R = 3.9, DRUM_H = 1.3, CONCH_H = 2.7;
 
 const S = {
   roof: { p: 0, target: 0, paused: false },
-  wall: { p: 0, target: 0 },
+  wall: { p: 0, target: 0 }, wallStill: true, wallT: 2.0,
   weather: 'breeze', time: 'dusk',
   xray: false, labels: true,
   fansOpen: true, allDoors: false,
@@ -169,9 +169,9 @@ T.woodDark = woodTex('#4b2c1b', '#25140b', '#6e4329');
 T.woodFloor = woodTex('#a8763f', '#6a4422', '#c99a60', 6, [0.6, 0.6]);
 T.woodWarm = woodTex('#a06a3c', '#5e3a1e', '#c38b56');
 T.shingle = canvasTex(128, 128, (g, w, h) => {
-  g.fillStyle = '#b8824b'; g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 60; i++) { g.strokeStyle = rnd() < 0.5 ? '#7c512b' : '#d9a66c'; g.globalAlpha = rr(0.15, 0.4); g.lineWidth = rr(0.5, 1.5); const y = rnd() * h; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(w * 0.3, y + rr(-4, 4), w * 0.6, y + rr(-4, 4), w, y + rr(-3, 3)); g.stroke(); }
-  g.globalAlpha = 1; g.strokeStyle = 'rgba(60,35,15,0.6)'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
+  g.fillStyle = '#8f6240'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 60; i++) { g.strokeStyle = rnd() < 0.5 ? '#6a4329' : '#b8875c'; g.globalAlpha = rr(0.15, 0.4); g.lineWidth = rr(0.5, 1.5); const y = rnd() * h; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(w * 0.3, y + rr(-4, 4), w * 0.6, y + rr(-4, 4), w, y + rr(-3, 3)); g.stroke(); }
+  g.globalAlpha = 1; g.strokeStyle = 'rgba(90,70,50,0.55)'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
 });
 
 T.paver = canvasTex(512, 512, (g, w, h) => {
@@ -390,6 +390,55 @@ T.bark = canvasTex(256, 256, (g, w, h) => {
   for (let i = 0; i < 160; i++) { g.strokeStyle = rnd() < 0.5 ? 'rgba(40,34,28,0.6)' : 'rgba(170,160,140,0.35)'; g.lineWidth = rr(1, 3); const x = rnd() * w; g.beginPath(); g.moveTo(x, 0); for (let y = 0; y <= h; y += 16) g.lineTo(x + rr(-5, 5), y); g.stroke(); }
 }, { rep: [2, 2] });
 
+
+/* ---------- driftwood pavilion decor ---------- */
+T.planks = canvasTex(512, 512, (g, w, h) => {
+  const bw = 41;
+  for (let x = 0; x < w; x += bw) {
+    const l = rr(70, 82), s = rr(10, 20), hu = rr(30, 40);
+    g.fillStyle = `hsl(${hu},${s}%,${l}%)`; g.fillRect(x, 0, bw, h);
+    for (let i = 0; i < 26; i++) { g.strokeStyle = rnd() < 0.6 ? `rgba(110,90,65,${rr(0.08, 0.28)})` : `rgba(255,250,240,${rr(0.1, 0.3)})`; g.lineWidth = rr(0.5, 1.6); const gx = x + rr(2, bw - 2); g.beginPath(); g.moveTo(gx, 0); for (let y = 0; y <= h; y += 24) g.lineTo(gx + Math.sin(y * 0.03 + i) * rr(0.5, 2.5), y); g.stroke(); }
+    if (rnd() < 0.5) { g.fillStyle = 'rgba(90,70,50,0.35)'; g.beginPath(); g.ellipse(x + rr(8, bw - 8), rr(0, h), rr(3, 6), rr(6, 12), 0, 0, 7); g.fill(); }  // knot
+    g.fillStyle = 'rgba(55,40,25,0.75)'; g.fillRect(x, 0, 2.5, h);                       // board gap
+    g.fillStyle = 'rgba(255,250,240,0.25)'; g.fillRect(x + 2.5, 0, 1.5, h);
+    for (const y of [40, 300]) { g.fillStyle = 'rgba(60,55,50,0.6)'; g.beginPath(); g.arc(x + bw / 2, y + rr(-8, 8), 1.8, 0, 7); g.fill(); }  // nails
+  }
+  speckle(g, w, h, 4000, ['#7a6a55', '#fff8ec'], 0.5, 1.5, 0.05, 0.2);
+}, { rep: [0.5, 0.5] });
+T.lime = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#f2ece0'; g.fillRect(0, 0, w, h);
+  blotch(g, w, h, 50, 'rgba(215,200,175,A)', 30, 140, 0.16);
+  blotch(g, w, h, 30, 'rgba(255,255,250,A)', 30, 120, 0.25);
+  for (let i = 0; i < 90; i++) { g.strokeStyle = `rgba(200,185,160,${rr(0.05, 0.14)})`; g.lineWidth = rr(6, 18); g.beginPath(); const x = rnd() * w, y = rnd() * h; g.arc(x, y, rr(30, 90), rr(0, 6), rr(0, 6) + 1); g.stroke(); }
+  speckle(g, w, h, 6000, ['#d8ccb4', '#ffffff']);
+}, { rep: [0.5, 0.5] });
+T.cedar = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#5d5448'; g.fillRect(0, 0, w, h);
+  const rh = 46;
+  for (let y = 0; y < h; y += rh) {
+    let x = -rr(0, 40);
+    while (x < w) { const sw = rr(28, 62); g.fillStyle = `hsl(${rr(25, 40)},${rr(6, 14)}%,${rr(52, 68)}%)`; g.fillRect(x + 1.5, y, sw - 3, rh + 10);
+      for (let k = 0; k < 6; k++) { g.strokeStyle = 'rgba(70,60,50,0.2)'; g.lineWidth = 0.8; const gx = x + rr(3, sw - 3); g.beginPath(); g.moveTo(gx, y); g.lineTo(gx + rr(-2, 2), y + rh); g.stroke(); }
+      x += sw; }
+    g.fillStyle = 'rgba(30,25,20,0.55)'; g.fillRect(0, y + rh - 5, w, 5);
+  }
+  speckle(g, w, h, 5000, ['#3a332b', '#c9c0b0'], 0.5, 2, 0.05, 0.3);
+}, { rep: [0.7, 0.7] });
+T.porous = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#efe3cc'; g.fillRect(0, 0, w, h);
+  blotch(g, w, h, 30, 'rgba(205,185,150,A)', 20, 80, 0.25);
+  speckle(g, w, h, 5000, ['#c9b48f', '#fff8e8']);
+  g.globalCompositeOperation = 'destination-out';
+  const holes = [];
+  for (let i = 0; i < 2200 && holes.length < 150; i++) {
+    const x = rr(10, w - 10), y = rr(10, h - 10), r = rr(9, 26);
+    if (holes.every(([hx, hy, hr]) => Math.hypot(hx - x, hy - y) > hr + r + 7)) holes.push([x, y, r]);
+  }
+  for (const [x, y, r] of holes) { g.beginPath(); g.ellipse(x, y, r, r * rr(0.75, 1), rr(0, 3), 0, 7); g.fill(); }
+  g.globalCompositeOperation = 'source-over';
+  for (const [x, y, r] of holes) { g.strokeStyle = 'rgba(150,120,80,0.55)'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, r + 1.5, 0, 7); g.stroke(); }
+}, { rep: [1.2, 1.2] });
+
 /* ---------- materials ---------- */
 const M = {
   stucco: new THREE.MeshStandardMaterial({ map: T.stucco, roughness: 0.92 }),
@@ -462,6 +511,123 @@ M.lavender = new THREE.MeshStandardMaterial({ map: T.lavender, alphaTest: 0.4, s
 M.bark = new THREE.MeshStandardMaterial({ map: T.bark, bumpMap: T.bark, bumpScale: 3, roughness: 1 });
 M.palmBark = new THREE.MeshStandardMaterial({ map: T.palmRings, bumpMap: T.palmRings, bumpScale: 4, roughness: 1 });
 M.stucco.color.set(0xf2e8d8); M.terracotta.color.set(0xd9c2b0);
+// --- driftwood pavilion decor: re-skin the house materials ---
+M.stone.color.set(0xfff6ea);   // pale coral limestone base, steps & trims
+T.diamond = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#3e2818'; g.fillRect(0, 0, w, h);
+  const s = 128;   // 4 diamonds per metre
+  const cells = [];
+  for (let r = -1; r <= h / (s / 2) + 1; r++) for (let c2 = -1; c2 <= w / s + 1; c2++) cells.push([c2 * s + (r % 2 ? s / 2 : 0), r * s / 2]);
+  cells.sort((A, B) => A[1] - B[1]);
+  for (const [cx, cy] of cells) {
+    const l = rr(38, 50), hu = rr(24, 30), sa = rr(34, 46);
+    const gr = g.createLinearGradient(cx, cy - s / 2, cx, cy + s / 2);
+    gr.addColorStop(0, `hsl(${hu},${sa}%,${l + 8}%)`); gr.addColorStop(0.75, `hsl(${hu},${sa}%,${l}%)`); gr.addColorStop(1, `hsl(${hu},${sa}%,${l - 16}%)`);
+    g.fillStyle = gr; g.beginPath(); g.moveTo(cx, cy - s / 2 - 2); g.lineTo(cx + s / 2 + 2, cy); g.lineTo(cx, cy + s / 2 + 2); g.lineTo(cx - s / 2 - 2, cy); g.closePath(); g.fill();
+    g.save(); g.clip();
+    for (let k = 0; k < 14; k++) { g.strokeStyle = rnd() < 0.5 ? 'rgba(70,45,25,0.25)' : 'rgba(255,230,190,0.18)'; g.lineWidth = rr(0.6, 1.6); const yy = cy + rr(-s / 2, s / 2); g.beginPath(); g.moveTo(cx - s / 2, yy); g.bezierCurveTo(cx - s / 6, yy + rr(-3, 3), cx + s / 6, yy + rr(-3, 3), cx + s / 2, yy + rr(-2, 2)); g.stroke(); }
+    g.restore();
+    g.strokeStyle = 'rgba(40,25,12,0.75)'; g.lineWidth = 2.5; g.stroke();
+    g.fillStyle = 'rgba(30,18,8,0.35)'; g.beginPath(); g.moveTo(cx - s / 2, cy); g.lineTo(cx, cy + s / 2); g.lineTo(cx + s / 2, cy); g.lineTo(cx, cy + s / 2 - 5); g.closePath(); g.fill();   // overlap shadow
+  }
+}, { rep: [1, 1] });
+T.cement = canvasTex(512, 512, (g, w, h) => {
+  const s = 128;
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const x = c * s, y = r * s;
+    g.fillStyle = '#f1ebdf'; g.fillRect(x, y, s, s);
+    g.fillStyle = '#244a6b';
+    for (const [ax, ay] of [[0, 0], [s, 0], [0, s], [s, s]]) { g.beginPath(); g.arc(x + ax, y + ay, s * 0.32, 0, 7); g.fill(); }
+    g.fillStyle = '#f1ebdf'; for (const [ax, ay] of [[0, 0], [s, 0], [0, s], [s, s]]) { g.beginPath(); g.arc(x + ax, y + ay, s * 0.2, 0, 7); g.fill(); }
+    g.fillStyle = '#c4703f'; for (const [ax, ay] of [[0, 0], [s, 0], [0, s], [s, s]]) { g.beginPath(); g.arc(x + ax, y + ay, s * 0.1, 0, 7); g.fill(); }
+    g.fillStyle = '#5f9aa0'; g.beginPath(); g.moveTo(x + s / 2, y + s * 0.22); g.lineTo(x + s * 0.78, y + s / 2); g.lineTo(x + s / 2, y + s * 0.78); g.lineTo(x + s * 0.22, y + s / 2); g.closePath(); g.fill();
+    g.fillStyle = '#f1ebdf'; g.beginPath(); g.arc(x + s / 2, y + s / 2, s * 0.1, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(80,70,60,0.5)'; g.lineWidth = 2; g.strokeRect(x, y, s, s);
+  }
+  speckle(g, w, h, 6000, ['#000', '#fff'], 0.5, 1.5, 0.03, 0.12);
+}, { rep: [1.25, 1.25] });
+T.zellige = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#e8e1d4'; g.fillRect(0, 0, w, h);
+  const s = 64; for (let y = 0; y < h; y += s) for (let x = 0; x < w; x += s) { g.fillStyle = `hsl(${rr(195, 210)},${rr(45, 65)}%,${rr(32, 50)}%)`; g.fillRect(x + 2, y + 2, s - 4, s - 4); g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(x + 4, y + 4, s * 0.4, 4); }
+}, { rep: [4, 4] });
+T.rattan = canvasTex(256, 256, (g, w, h) => {
+  g.clearRect(0, 0, w, h); g.lineWidth = 6;
+  for (let i = -w; i < w * 2; i += 22) { g.strokeStyle = '#c69a5e'; g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke(); g.strokeStyle = '#b3864d'; g.beginPath(); g.moveTo(i, h); g.lineTo(i + h, 0); g.stroke(); }
+}, { rep: [3, 3] });
+function artTex(kind) {
+  return canvasTex(512, 384, (g, w, h) => {
+    if (kind === 0) { // turquoise seascape at sunset
+      let gr = g.createLinearGradient(0, 0, 0, h * 0.55); gr.addColorStop(0, '#f6c79a'); gr.addColorStop(1, '#f39b7a'); g.fillStyle = gr; g.fillRect(0, 0, w, h * 0.55);
+      g.fillStyle = '#ffe2a8'; g.beginPath(); g.arc(w * 0.62, h * 0.48, 34, 0, 7); g.fill();
+      gr = g.createLinearGradient(0, h * 0.55, 0, h); gr.addColorStop(0, '#3fb3b8'); gr.addColorStop(1, '#1f6f8f'); g.fillStyle = gr; g.fillRect(0, h * 0.55, w, h * 0.45);
+      for (let i = 0; i < 40; i++) { g.strokeStyle = 'rgba(255,240,220,0.35)'; g.lineWidth = 2; const y = h * 0.58 + rnd() * h * 0.4; g.beginPath(); g.moveTo(rnd() * w, y); g.lineTo(rnd() * w, y); g.stroke(); }
+    } else if (kind === 1) { // palm fronds, botanical print
+      g.fillStyle = '#efe6d2'; g.fillRect(0, 0, w, h);
+      for (let k = 0; k < 5; k++) { g.save(); g.translate(w * (0.2 + k * 0.15), h); g.rotate(-0.6 + k * 0.3); g.strokeStyle = '#2f5d3a'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -h * 0.85); g.stroke();
+        for (let y = 20; y < h * 0.85; y += 12) { g.lineWidth = 3; g.strokeStyle = k % 2 ? '#3f7a4a' : '#2f6a3e'; g.beginPath(); g.moveTo(0, -y); g.lineTo(-60 * Math.sin(y / h * 3), -y + 30); g.moveTo(0, -y); g.lineTo(60 * Math.sin(y / h * 3), -y + 30); g.stroke(); } g.restore(); }
+    } else { // conch spiral study
+      g.fillStyle = '#f3e9d6'; g.fillRect(0, 0, w, h); g.strokeStyle = '#b06a4a'; g.lineWidth = 3;
+      for (let i = 0; i < 260; i++) { const a = i * 0.12, r = 2 + i * 0.62; g.beginPath(); g.arc(w / 2 + Math.cos(a) * r * 0.3, h / 2 + Math.sin(a) * r * 0.3, r * 0.06 + 1, 0, 7); g.stroke(); }
+      g.strokeStyle = '#2b4f6a'; g.lineWidth = 4; g.beginPath(); for (let i = 0; i < 300; i++) { const a = i * 0.08, r = Math.exp(a * 0.12) * 3; const x = w / 2 + Math.cos(a) * r, y = h / 2 + Math.sin(a) * r; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+    }
+  });
+}
+M.cement = new THREE.MeshStandardMaterial({ map: T.cement, roughness: 0.55 });
+M.zellige = new THREE.MeshStandardMaterial({ map: T.zellige, roughness: 0.15, metalness: 0.05 });
+M.rattan = new THREE.MeshStandardMaterial({ map: T.rattan, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.8 });
+M.rattanSolid = new THREE.MeshStandardMaterial({ color: 0xc69a5e, roughness: 0.85 });
+M.brass = new THREE.MeshStandardMaterial({ color: 0xc9a25a, metalness: 0.8, roughness: 0.35 });
+M.art = [0, 1, 2].map(k => new THREE.MeshStandardMaterial({ map: artTex(k), roughness: 0.8 }));
+M.diamond = new THREE.MeshStandardMaterial({ map: T.diamond, bumpMap: T.diamond, bumpScale: 4, roughness: 0.7 });
+M.stucco.map = T.lime; M.stucco.bumpMap = T.lime; M.stucco.bumpScale = 0.8; M.stucco.color.set(0xffffff);
+M.terracotta.map = T.cedar; M.terracotta.bumpMap = T.cedar; M.terracotta.bumpScale = 3; M.terracotta.color.set(0xffffff); M.terracotta.roughness = 0.9;
+M.flag.color.set(0xf4efe6);
+M.porous = new THREE.MeshStandardMaterial({ map: T.porous, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9, bumpMap: T.porous, bumpScale: 2 });
+M.porousCore = new THREE.MeshStandardMaterial({ color: 0x7a6447, roughness: 1 });
+M.rail = new THREE.MeshStandardMaterial({ map: T.planks, color: 0xe9e0d0, roughness: 0.7 });
+M.lantern.color.set(0xffe2a8);
+M.door.color.set(0xd9c7ae); M.garage.color.set(0xd9c7ae); M.woodDark.color.set(0xb89d82);
+/* slender limewash column with turned timber base + capital (Bahamian veranda style) */
+const _colGeo = new THREE.LatheGeometry([[0, 0], [0.5, 0], [0.5, 0.04], [0.42, 0.08], [0.4, 0.5], [0.36, 0.97], [0.44, 1.0], [0, 1.0]].map(q => new THREE.Vector2(q[0], q[1])), 24);
+function pillar(w, h, d, x, y, z, o = {}) {
+  const r = Math.min(w, d) * 0.5;
+  const shaft = new THREE.Mesh(_colGeo, M.stucco); shaft.scale.set(r * 1.6, h - 0.3, r * 1.6); shaft.position.set(x, y + 0.15, z);
+  shaft.castShadow = true; shaft.receiveShadow = true; staticRoot.add(shaft);
+  box(r * 2.4, 0.15, r * 2.4, M.woodWarm, x, y, z);                     // timber plinth
+  box(r * 2.6, 0.15, r * 2.6, M.woodWarm, x, y + h - 0.15, z);          // timber capital
+  if (o.collide) addCollider(x - r, x + r, y, y + h, z - r, z + r);
+  return shaft;
+}
+/* soft sea-blue Bahama shutters (louvered), shown open beside a window */
+T.louver = canvasTex(128, 256, (g, w, h) => {
+  g.fillStyle = '#86b9bb'; g.fillRect(0, 0, w, h);
+  for (let y = 10; y < h - 8; y += 9) { g.fillStyle = 'rgba(30,60,70,0.35)'; g.fillRect(8, y + 5, w - 16, 3); g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(8, y, w - 16, 2); }
+  g.strokeStyle = '#5f8f92'; g.lineWidth = 10; g.strokeRect(0, 0, w, h);
+  speckle(g, w, h, 1500, ['#4f7a7c', '#d9ecea'], 0.5, 1.5, 0.05, 0.3);
+});
+M.shutter = new THREE.MeshStandardMaterial({ map: T.louver, roughness: 0.65 });
+function shutters(c, y0, ww, hh, face, axis = 'x') {
+  for (const s of [-1, 1]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(ww / 2 + 0.05, hh, 0.04), M.shutter); m.castShadow = true;
+    if (axis === 'x') m.position.set(c + s * (ww * 0.75 + 0.1), y0 + hh / 2, face); else { m.rotation.y = Math.PI / 2; m.position.set(face, y0 + hh / 2, c + s * (ww * 0.75 + 0.1)); }
+    staticRoot.add(m);
+  }
+}
+/* planter box with flowers under a window */
+function windowBox(c, y, face, ww, axis = 'x') {
+  if (axis === 'x') { box(ww + 0.2, 0.22, 0.25, M.woodWarm, c, y, face); foliage(M.foliageDark, c, y + 0.3, face, ww / 2, 0.15, 0.15, 18, 0.22, 0.35); }
+  else { box(0.25, 0.22, ww + 0.2, M.woodWarm, face, y, c); foliage(M.foliageDark, face, y + 0.3, c, 0.15, 0.15, ww / 2, 18, 0.22, 0.35); }
+}
+/* festoon string lights (glow at dusk / night) */
+const _bulbGeo = new THREE.SphereGeometry(0.045, 8, 6);
+function stringLights(a, b, sag = 0.4, n = 14) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b); const pts = [];
+  for (let i = 0; i <= 24; i++) { const t = i / 24; const p = A.clone().lerp(B, t); p.y -= sag * 4 * t * (1 - t); pts.push(p); }
+  tube(pts, 0.006, M.iron, { seg: 24, rs: 3, cast: false, parent: dynRoot });
+  const inst = new THREE.InstancedMesh(_bulbGeo, M.lantern, n); const m4 = new THREE.Matrix4();
+  for (let i = 0; i < n; i++) { const t = (i + 0.5) / n; const p = A.clone().lerp(B, t); p.y -= sag * 4 * t * (1 - t) + 0.06; m4.makeTranslation(p.x, p.y, p.z); inst.setMatrixAt(i, m4); }
+  dynRoot.add(inst);
+}
 /* leaf-card foliage: many alpha-textured cards scattered in an ellipsoid */
 const _cardGeo = new THREE.PlaneGeometry(1, 1);
 function foliage(mat, cx, cy, cz, rx, ry, rz, n, smin, smax, parent) {
@@ -524,6 +690,8 @@ function tube(points, r, mat, o = {}) {
 
 /* wall along an axis, with arched / rectangular openings.
    axis 'x': runs a..b along x at z=c ; axis 'z': runs a..b along z at x=c */
+const SKIN_PANELS = [];
+M.skinBack = new THREE.MeshStandardMaterial({ color: 0x4a3b2e, emissive: 0xffa04a, emissiveMap: T.perf, emissiveIntensity: 0, roughness: 0.95 });
 function wall(axis, a, b, c, y0, h, t, mat, openings = [], o = {}) {
   const len = b - a;
   const shape = new THREE.Shape(); shape.moveTo(0, 0); shape.lineTo(len, 0); shape.lineTo(len, h); shape.lineTo(0, h); shape.closePath();
@@ -538,6 +706,21 @@ function wall(axis, a, b, c, y0, h, t, mat, openings = [], o = {}) {
   const geo = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: false, curveSegments: 14 });
   geo.translate(0, 0, -t / 2);
   const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true;
+  if (o.clad) {   // kinetic diamond-scale skin on the exterior face: glowing backing now, tiles added by SKIN (p4)
+    const cg = new THREE.ShapeGeometry(shape, 14); cg.translate(0, 0, o.clad * (t / 2 + 0.008));
+    if (o.clad < 0) { const idx = cg.index.array; for (let i = 0; i < idx.length; i += 3) { const tmp = idx[i]; idx[i] = idx[i + 1]; idx[i + 1] = tmp; } }
+    cg.computeVertexNormals();
+    const uvA = cg.attributes.uv; for (let i = 0; i < uvA.count; i++) uvA.setXY(i, uvA.getX(i) / 3, uvA.getY(i) / 3);
+    const cm = new THREE.Mesh(cg, M.skinBack); cm.receiveShadow = true;
+    const W = new THREE.Object3D();
+    (axis === 'x') ? (cm.position.set(a, y0, c), W.position.set(a, y0, c)) : (cm.rotation.y = W.rotation.y = -Math.PI / 2, cm.position.set(c, y0, a), W.position.set(c, y0, a));
+    dynRoot.add(cm); W.updateMatrix();
+    SKIN_PANELS.push({ W: W.matrix.clone(), Wq: W.quaternion.clone(), len, h, t, clad: o.clad, ops: openings.map(op => ({ x0: op.c - a - op.w / 2, x1: op.c - a + op.w / 2, yb: op.y || 0, yt: (op.y || 0) + op.h, arch: op.arch, r: op.w / 2, cx: op.c - a })) });
+    const tb = new THREE.Mesh(new THREE.BoxGeometry(len, 0.14, 0.12), M.stone); tb.position.set(len / 2, h - 0.07, o.clad * (t / 2 + 0.06));
+    const bb = tb.clone(); bb.position.y = 0.07; const tg = new THREE.Group(); tg.add(tb, bb);
+    (axis === 'x') ? tg.position.set(a, y0, c) : (tg.rotation.y = -Math.PI / 2, tg.position.set(c, y0, a));
+    (o.parent || staticRoot).add(tg);
+  }
   const place = (obj) => { if (axis === 'x') obj.position.set(a, y0, c); else { obj.rotation.y = -Math.PI / 2; obj.position.set(c, y0, a); } };
   place(m); (o.parent || staticRoot).add(m); blockers.push(m);
   // glass + frames in window openings
@@ -660,19 +843,12 @@ function lantern(x, y, z, ry = 0, withLight = false) {
 function railing(a, b, h = 1.0, spacing = 0.13) {
   const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
   const len = A.distanceTo(B); const n = Math.max(2, Math.round(len / spacing));
-  tube([[A.x, A.y + h, A.z], [B.x, B.y + h, B.z]], 0.022, M.iron, { seg: 2, rs: 6, cast: false });
-  tube([[A.x, A.y + 0.1, A.z], [B.x, B.y + 0.1, B.z]], 0.012, M.iron, { seg: 2, rs: 4, cast: false });
-  const bg = new THREE.CylinderGeometry(0.008, 0.008, h, 4);
-  const inst = new THREE.InstancedMesh(bg, M.iron, n + 1); const m4 = new THREE.Matrix4();
+  box(len, 0.06, 0.09, M.rail, (A.x + B.x) / 2, Math.min(A.y, B.y) + h - 0.03, (A.z + B.z) / 2, { ry: -Math.atan2(B.z - A.z, B.x - A.x), dyn: true, uv: false });
+  box(len, 0.05, 0.05, M.rail, (A.x + B.x) / 2, Math.min(A.y, B.y) + 0.08, (A.z + B.z) / 2, { ry: -Math.atan2(B.z - A.z, B.x - A.x), dyn: true, uv: false });
+  const bg = new THREE.BoxGeometry(0.035, h, 0.035);
+  const inst = new THREE.InstancedMesh(bg, M.rail, n + 1); const m4 = new THREE.Matrix4();
   for (let i = 0; i <= n; i++) { const p = A.clone().lerp(B, i / n); m4.makeTranslation(p.x, p.y + h / 2, p.z); inst.setMatrixAt(i, m4); }
   dynRoot.add(inst);
-  // scroll detail every ~1m
-  const k = Math.floor(len);
-  for (let i = 0; i < k; i++) {
-    const p = A.clone().lerp(B, (i + 0.5) / (k || 1));
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.008, 4, 14), M.iron);
-    ring.position.set(p.x, p.y + h * 0.6, p.z); ring.lookAt(p.x - (B.z - A.z), p.y + h * 0.6, p.z + (B.x - A.x)); dynRoot.add(ring);
-  }
   // collider (thin)
   const minX = Math.min(A.x, B.x) - 0.06, maxX = Math.max(A.x, B.x) + 0.06, minZ = Math.min(A.z, B.z) - 0.06, maxZ = Math.max(A.z, B.z) + 0.06;
   if (Math.abs(A.y - B.y) < 0.05) addCollider(minX, maxX, A.y, A.y + h, minZ, maxZ);
